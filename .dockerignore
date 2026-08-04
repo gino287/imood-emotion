@@ -1,0 +1,30 @@
+# dockerfile 是 COPY . .，沒有這份檔案的話下面這些東西會被打包進 image。
+# 開發時一律用 -v 掛載當前資料夾，這些內容容器仍然看得到，不影響執行。
+
+# 轉向 MVP 前的評測骨架與凍結資料集，整包在 _sandbox/。
+# 不進 image，但 compose 的 -v .:/app 仍會掛進容器，要跑舊腳本照樣跑得動。
+_sandbox/
+
+# 評測產出、凍結測試集：跑起來才有的東西，不該進 image
+data/
+results/
+
+# HF 模型快取：Johnson8187 large 版約 1.4GB，進 image 等於每次 build 都搬一次
+.cache/
+
+# 本機虛擬環境（Linux 容器用不到 Windows 裝的套件）
+.venv/
+
+# 版控與工具設定
+.git/
+.gitignore
+.claude/
+__pycache__/
+*.pyc
+
+# 文件：改 README 不該觸發 image 重建
+*.md
+
+# 金鑰：走 --env-file 帶進容器，不烘進 image 層
+.env
+.secrets/

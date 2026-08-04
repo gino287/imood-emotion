@@ -1,0 +1,49 @@
+# 把《Docker常用指令手冊》裡那串
+#   docker run --rm --gpus all -v ${PWD}:/app --env-file .env bert-emotion
+# 收進設定檔。
+#
+# 用法：
+#   docker compose build
+#   docker compose run --rm app-cpu python -c "import torch; print(torch.__version__)"
+#   docker compose run --rm app python -c "import torch; print(torch.cuda.is_available())"
+#
+# 要跑轉向前的評測骨架（已移進 _sandbox/，不進 image，但靠下面的 -v 掛得到）：
+#   docker compose run --rm app-cpu python _sandbox/scripts/selftest.py
+#   docker compose run --rm app python _sandbox/run_eval.py --model johnson-small
+
+x-common: &common
+  build:
+    context: .
+    dockerfile: dockerfile      # 檔名是小寫，Docker 預設找的是 Dockerfile，要講清楚
+  image: imood-ai
+  volumes:
+    # 整個專案資料夾掛進去：改 .py 不用重 build。
+    # HF_HOME 在 dockerfile 裡設成 /app/.cache/huggingface，剛好落在這個掛載範圍內，
+    # 所以主機直接跑 python 與容器內跑會共用同一份模型快取，1.1GB 的模型只下載一次。
+    # .cache/ 與 _sandbox/ 都在 .gitignore 與 .dockerignore 裡，
+    # 不會進版控也不會進 image，但因為這行掛載，容器內照樣看得到。
+    - .:/app
+    # SMP2020 原始資料在專案外層（imood/refs），容器看不到，
+    # 唯讀掛進來給 _sandbox/scripts/build_testset.py 用
+    - ../refs:/refs:ro
+  env_file:
+    - .env
+  working_dir: /app
+
+services:
+  # 主要服務：借用主機 GPU
+  app:
+    <<: *common
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  # CPU 對照組。評測要同時量 CPU 與 GPU 的延遲（部署硬體未定，
+  # 且 3050 4GB 要跟 Moshi/JoyGen 共卡，CPU 路線必須有數字備著）。
+  # 這個服務不掛 GPU，確保量到的是乾淨的 CPU 數字。
+  app-cpu:
+    <<: *common

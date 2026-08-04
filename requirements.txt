@@ -1,0 +1,24 @@
+# 評測骨架依賴
+#
+# ⚠️ 絕對不要在這裡指定 torch / torchvision。
+#    base image (pytorch/pytorch:2.13.0-cuda12.6-cudnn9-runtime) 已內建一組
+#    互相對得上的 CUDA/cuDNN/PyTorch 版本，自己再裝一次必定版本衝突。
+#    （07/22 踩過這個坑，見《Docker常用指令手冊》觀念小抄）
+
+transformers==5.14.1            # 07/17 實際驗證可用的版本
+requests
+
+numpy                           # 指標全部用 numpy 自己實作（evalkit/metrics.py）
+                                # 刻意不裝 scikit-learn：那幾個公式都是教科書等級的短函式，
+                                # 少一個含 scipy 的依賴，image 小幾百 MB。
+                                # 正確性由 scripts/selftest.py 的手算案例頂著
+PyYAML                          # 讀 configs/models.yaml
+tqdm                            # 1200 句跑起來要看得到進度
+
+opencc-python-reimplemented==0.1.7   # 簡→繁 s2twp。純 Python 實作免編譯，
+                                # Linux 容器與 Windows 本機行為一致。
+                                # ⚠️ 要釘版本：轉換結果會影響凍結資料集的 SHA-256，
+                                # 換版本等於換一份測試集，先前模型的數字就不可比了
+
+nvidia-ml-py                    # 讀 process 真實 VRAM 佔用（含 CUDA context）
+                                # 注意 import 名稱是 pynvml，不是 nvidia_ml_py

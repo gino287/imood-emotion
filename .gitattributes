@@ -1,0 +1,3 @@
+# 在 Windows 開發、在 Linux 容器裡跑。checkout 一律用 LF，
+# 免得之後寫 entrypoint.sh 時 CRLF 讓容器噴 "exec format error" / "\r: not found"。
+* text=auto eol=lf

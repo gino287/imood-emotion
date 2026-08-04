@@ -1,0 +1,24 @@
+# 08/04 專案轉向做 MVP。轉向前的評測骨架（evalkit / run_eval.py / scripts /
+# configs / data / results）整包移進 _sandbox/，暫不進版控：
+# 那些是探索期的產物，MVP 需要什麼再一份份撿回來，避免一開始就把 repo 塞滿舊包袱。
+_sandbox/
+
+# 金鑰（HF_TOKEN 走 --env-file 帶進容器，不進版控）
+.env
+.secrets/
+
+# HF 模型快取（單一模型可達 1.4GB）
+.cache/
+
+# Python 執行時產生的快取
+__pycache__/
+*.pyc
+
+# Claude Code 本機設定：各人機器不同，不共用
+.claude/settings.local.json
+
+# 之後訓練會產生的東西
+checkpoints/
+runs/
+*.bin
+*.safetensors
