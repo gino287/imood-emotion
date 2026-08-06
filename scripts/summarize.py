@@ -125,9 +125,22 @@ def render(stats: list) -> str:
             "GPU 的優勢才會顯現。",
         ]
         if cpu_cont:
-            lines.append("")
-            lines.append(f"（對照：CPU 連續到達為 {cpu_cont['p50']:.0f}ms，"
-                         "與間隔到達差異不大，CPU 不受閒置影響。）")
+            delta = (cpu_cont["p50"] - cpu_gap["p50"]) / cpu_gap["p50"] * 100
+            lines += [
+                "",
+                f"**CPU 的方向相反**：連續到達 {cpu_cont['p50']:.0f}ms，間隔到達 "
+                f"{cpu_gap['p50']:.0f}ms —— 連續反而慢了 {abs(delta):.0f}%。"
+                if delta > 0 else
+                f"**對照**：CPU 連續到達 {cpu_cont['p50']:.0f}ms、間隔到達 "
+                f"{cpu_gap['p50']:.0f}ms，差異 {abs(delta):.0f}%。",
+            ]
+            if delta > 5:
+                lines += [
+                    "",
+                    "CPU 沒有閒置降頻的問題，連續運算反而讓核心持續滿載、無法回到高頻，"
+                    "所以句間的停頓對 CPU 是休息、對 GPU 是降頻。"
+                    "兩者對同一個間隔的反應完全相反。",
+                ]
 
     gpu = gpu_gap or gpu_cont
     if gpu and gpu["vram_alloc"]:
