@@ -57,8 +57,11 @@ docker compose run --rm app python -c "import torch; print(torch.cuda.is_availab
 從 `Johnson8187/Chinese_Multi-Emotion_Dialogue_Dataset`（與模型同作者發布）以固定 seed 抽樣：
 
 ```bash
-docker compose run --rm app-cpu python scripts/prepare_samples.py --limit 25
+# 重現 results/summary.md 的 baseline（200 句，每類均衡 25 句）
+docker compose run --rm app-cpu python scripts/prepare_samples.py --limit 200
 ```
+
+`--limit` 預設為 25，想快速試跑可以省略；但要對照已發布的 baseline 數字就要用 200。
 
 樣本輸出到 `_local/samples.jsonl`，不進版控 —— 固定 seed 加上釘住的資料集版本，任何人重跑都得到位元組相同的一份，存腳本比存資料有意義。腳本會印出 SHA-256 供核對。
 
@@ -68,24 +71,24 @@ docker compose run --rm app-cpu python scripts/prepare_samples.py --limit 25
 
 ```bash
 # 間隔到達：模擬 STT 的 0.5~3 秒不規律停頓（貼近實際使用）
-docker compose run --rm app-cpu python run_stream.py --device cpu
-docker compose run --rm app     python run_stream.py --device cuda
+docker compose run --rm app-cpu python run_stream.py --device cpu  --limit 200
+docker compose run --rm app     python run_stream.py --device cuda --limit 200
 
 # 連續到達：不等待，量模型本身的能力上限
-docker compose run --rm app-cpu python run_stream.py --device cpu  --no-delay
-docker compose run --rm app     python run_stream.py --device cuda --no-delay
+docker compose run --rm app-cpu python run_stream.py --device cpu  --limit 200 --no-delay
+docker compose run --rm app     python run_stream.py --device cuda --limit 200 --no-delay
 ```
 
-每收到一句立刻送進模型，不累積等待多句 —— 即時性優先。
+每收到一句立刻送進模型，不累積等待多句 —— 即時性優先。間隔到達的兩輪各需約 6 分鐘（等待本身佔掉大部分時間）。
 
-兩種到達模式都要測：**在間隔到達的條件下，GPU 的延遲反而高於 CPU**（句間閒置導致降頻，每句都在時脈未拉起時完成），而連續到達時 GPU 快一個量級。這決定了這個環節該不該佔用 GPU，數字見 [`results/summary.md`](results/summary.md)。
+兩種到達模式都要測，因為兩者的差異決定了這個環節該不該佔用 GPU：**間隔到達時 GPU 的延遲反而高於 CPU**，而連續到達時 GPU 快一個量級。CPU 的方向相反，連續到達比間隔到達還慢一些。數字與解釋見 [`results/summary.md`](results/summary.md)。
 
 常用參數：
 
 | 參數 | 說明 |
 | --- | --- |
 | `--device {cpu,cuda,auto}` | 指定 cuda 但 GPU 不可用時直接失敗，不靜默降級成 CPU；`auto` 才會降級 |
-| `--limit N` | 處理句數，預設 25 |
+| `--limit N` | 處理句數，預設 25；已發布的 baseline 用 200 |
 | `--no-delay` | 句間不等待。等待本身不在計時區間內，但會影響 GPU 的時脈狀態（見上） |
 | `--seed N` | 固定句序與間隔，讓兩個裝置跑在相同條件下 |
 | `--out PATH` | 輸出路徑，預設 `_local/out/stream_<device>[_nogap].jsonl` |
@@ -115,3 +118,11 @@ docker compose run --rm app-cpu python scripts/summarize.py
 執行環境（torch 版本、模型 id、樣本檔雜湊、時間戳）另存同名的 `.meta.json`。
 
 **逐句結果不進版控**（含資料集原文，且重跑即有）；不含原文的速度摘要見 `results/summary.md`。
+
+## 目前的範圍與後續
+
+現階段的上游是假的：句子取自資料集，由 `imood_stream/source.py` 以隨機間隔送出。因此 `results/summary.md` 的數字是**模型端延遲**——從拿到一句文字到得出結果，不含語音辨識。
+
+下一步是接上真實的前置模組（麥克風收音 → 語音轉文字 → 送入分類）。屆時只需替換 `source.py`，`classifier.py` 與 `recorder.py` 不受影響；但端到端延遲會另外包含語音辨識與斷句的耗時，與本份 baseline 不可直接相比。
+
+更新紀錄見 [`CHANGELOG.md`](CHANGELOG.md)。
