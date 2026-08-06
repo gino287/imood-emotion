@@ -1,11 +1,14 @@
 # dockerfile 是 COPY . .，沒有這份檔案的話下面這些東西會被打包進 image。
 # 開發時一律用 -v 掛載當前資料夾，這些內容容器仍然看得到，不影響執行。
 
-# 轉向 MVP 前的評測骨架與凍結資料集，整包在 _sandbox/。
-# 不進 image，但 compose 的 -v .:/app 仍會掛進容器，要跑舊腳本照樣跑得動。
+# 本地工作檔與另一套評測框架：不進 image。
+# compose 的 -v .:/app 仍會掛進容器，需要時照樣跑得到。
 _sandbox/
+_notes/
+_local/
+CLAUDE.md
 
-# 評測產出、凍結測試集：跑起來才有的東西，不該進 image
+# 執行產出：跑起來才有的東西，不該進 image
 data/
 results/
 

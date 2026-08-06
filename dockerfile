@@ -17,7 +17,7 @@ ENV PYTHONUNBUFFERED=1 \
 # 先只 COPY requirements：只要它沒變，下面這層 pip install 就吃快取，
 # 改 .py 不會觸發重裝套件
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --break-system-packages -r requirements.txt
 
 # 實際打包哪些檔案由 .dockerignore 決定（_sandbox/、.cache/ 都排除，
 # 否則轉向前的凍結資料集與模型快取會被塞進 image，體積爆掉）

@@ -1,7 +1,20 @@
-# 08/04 專案轉向做 MVP。轉向前的評測骨架（evalkit / run_eval.py / scripts /
-# configs / data / results）整包移進 _sandbox/，暫不進版控：
-# 那些是探索期的產物，MVP 需要什麼再一份份撿回來，避免一開始就把 repo 塞滿舊包袱。
+# 另一套評測框架與其凍結測試集。所用資料集有自身授權條款，不隨本 repo 散布；
+# 測試集由固定 seed 的腳本重建，存檔案沒有意義。
 _sandbox/
+
+# 本地工作檔。這三條規則涵蓋所有本地檔，新增檔案時不必逐一記得加。
+CLAUDE.md
+_notes/
+*.local.md
+
+# 執行期產物：抽樣樣本、逐句推論結果
+_local/
+
+# 本機專屬的 compose 疊加層（掛載路徑因人而異）
+docker-compose.override.yml
+
+# 逐句推論結果含資料集原文；results/ 只收不含原文的摘要
+results/*.jsonl
 
 # 金鑰（HF_TOKEN 走 --env-file 帶進容器，不進版控）
 .env
