@@ -16,9 +16,19 @@ imood.ai 情緒陪伴 AI 的情緒分類環節。Pipeline 位置：STT → **BER
 
 本階段直接採用原生 8 類，不做 6 類映射；映射方案待另一套評測框架的數字出來後再定案。
 
-> ⚠️ 該模型的 `config.json` 只有 `LABEL_0..LABEL_7` 佔位符，沒有真實標籤名，
-> 因此**標籤順序無法從模型本身驗證**，程式只驗得到「輸出為 8 類」。
-> 上面的順序取自 model card 的 `label_mapping`（2026-07-31 查核）。
+模型與資料集皆以 commit 釘住版本（見 `imood_stream/labels.py`）：Hugging Face 的 repo 可變，不釘版本的話同一份程式在不同時間會拿到不同的權重或資料，先前量到的數字就失去比較基礎。
+
+### 標籤順序的驗證
+
+該模型的 `config.json` 只有 `LABEL_0..LABEL_7` 佔位符，沒有真實標籤名，**順序無法從模型檔案本身讀出**，只能取自 model card。順序若接錯，分數會低得莫名其妙卻不會有任何錯誤訊息 —— 是這類任務最典型的靜默錯誤。
+
+因此改以行為驗證：
+
+```bash
+docker compose run --rm app-cpu python scripts/verify_labels.py
+```
+
+拿資料集的標註句跑一輪並印出混淆矩陣。順序正確時對角線會明顯浮出，接錯時整體對角率會掉到隨機水準（八類為 12.5%）。**2026-08-06 實測整體對角率 87.9%，八類對角線全數浮出，順序確認正確。** 改動 `NATIVE_LABELS`、換模型或換資料集版本後都應重跑。
 
 ## 環境
 
@@ -44,13 +54,15 @@ docker compose run --rm app python -c "import torch; print(torch.cuda.is_availab
 
 ### 1. 準備樣本
 
-從 `Johnson8187/Chinese_Multi-Emotion_Dialogue_Dataset`（與模型同作者發布，標籤與模型 8 類對應）以固定 seed 抽樣：
+從 `Johnson8187/Chinese_Multi-Emotion_Dialogue_Dataset`（與模型同作者發布）以固定 seed 抽樣：
 
 ```bash
 docker compose run --rm app-cpu python scripts/prepare_samples.py --limit 25
 ```
 
-樣本輸出到 `_local/samples.jsonl`，不進版控 —— 該資料集有自身授權條款，且固定 seed 使任何人重跑都得到同一份。腳本會印出 SHA-256 供核對。
+樣本輸出到 `_local/samples.jsonl`，不進版控 —— 固定 seed 加上釘住的資料集版本，任何人重跑都得到位元組相同的一份，存腳本比存資料有意義。腳本會印出 SHA-256 供核對。
+
+腳本會在執行時斷言資料集的標籤集合與模型 8 類一致。**該資料集的 README 列出的清單與實際資料不符**（README 寫有「恐懼語調」「驚訝語調」，實際皆為 0 筆；真正存在的是「關切語調」「驚奇語調」），故一律以實際資料為準，並每次執行都驗一次。
 
 ### 2. 跑串流分類
 

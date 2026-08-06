@@ -8,7 +8,7 @@ from pathlib import Path
 import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-from .labels import NATIVE_LABELS, NATIVE_LABELS_SOURCE
+from .labels import MODEL_REVISION, NATIVE_LABELS, NATIVE_LABELS_SOURCE
 
 MODEL_ID = "Johnson8187/Chinese-Emotion-Small"
 MAX_LENGTH = 160
@@ -62,8 +62,12 @@ class EmotionClassifier:
     def load(self) -> None:
         t0 = time.perf_counter()
         try:
-            self.tokenizer = AutoTokenizer.from_pretrained(self.model_id)
-            self.model = AutoModelForSequenceClassification.from_pretrained(self.model_id)
+            # revision 釘住 commit：HF repo 可變，不釘的話不同時間跑到的權重
+            # 可能不同，先前量到的數字就失去比較基礎
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                self.model_id, revision=MODEL_REVISION)
+            self.model = AutoModelForSequenceClassification.from_pretrained(
+                self.model_id, revision=MODEL_REVISION)
         except Exception as exc:
             # 這兩項是載入失敗最常見的原因，一併印出來省一輪來回
             raise SystemExit(

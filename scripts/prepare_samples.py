@@ -16,7 +16,11 @@ from random import Random
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from imood_stream.labels import NATIVE_LABELS, SAMPLE_DATASET_ID  # noqa: E402
+from imood_stream.labels import (  # noqa: E402
+    NATIVE_LABELS,
+    SAMPLE_DATASET_ID,
+    SAMPLE_DATASET_REVISION,
+)
 
 DEFAULT_OUT = Path("_local/samples.jsonl")
 
@@ -91,7 +95,8 @@ def main():
         raise SystemExit("缺少 datasets 套件。requirements.txt 已列出，請重跑 docker compose build")
 
     print(f"下載資料集：{SAMPLE_DATASET_ID}")
-    ds = load_dataset(SAMPLE_DATASET_ID, split="train")
+    print(f"  revision: {SAMPLE_DATASET_REVISION}（釘住 commit，避免上游更新後數字失去可比性）")
+    ds = load_dataset(SAMPLE_DATASET_ID, split="train", revision=SAMPLE_DATASET_REVISION)
 
     missing = {"text", "emotion"} - set(ds.column_names)
     if missing:

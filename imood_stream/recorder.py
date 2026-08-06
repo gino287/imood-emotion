@@ -72,9 +72,13 @@ class Recorder:
         """
         import transformers
 
+        from .labels import MODEL_REVISION, SAMPLE_DATASET_REVISION
+
         meta = {
             "timestamp": now_iso(),
             "model_id": self.model_id,
+            "model_revision": MODEL_REVISION,
+            "dataset_revision": SAMPLE_DATASET_REVISION,
             "device": self.device,
             "model_load_seconds": round(load_seconds, 3),
             "samples_file": str(self.samples_path),
