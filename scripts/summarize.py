@@ -25,15 +25,23 @@ def percentile(values: list, q: float) -> float:
 
 
 def load_runs(in_dir: Path) -> list:
+    """收集串流執行的結果。
+
+    判準是「有沒有配對的 .meta.json」：只有 run_stream.py 會同時產出這兩個檔案，
+    其他落在同一個目錄的 jsonl（壓力測試的逐句明細、下游封包等）都沒有 meta。
+    用檔名規則排除會隨著輸出種類變多而失效，用 meta 當判準才穩。
+    """
     runs = []
     for jsonl in sorted(in_dir.glob("*.jsonl")):
         if jsonl.name.startswith("_"):
             continue  # 底線開頭是臨時檔（煙霧測試等），不列入
-        records = [json.loads(line) for line in jsonl.read_text(encoding="utf-8").splitlines() if line.strip()]
         meta_path = jsonl.with_suffix(".meta.json")
-        meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {}
+        if not meta_path.exists():
+            continue
+        records = [json.loads(line) for line in jsonl.read_text(encoding="utf-8").splitlines() if line.strip()]
         if records:
-            runs.append({"path": jsonl, "records": records, "meta": meta})
+            runs.append({"path": jsonl, "records": records,
+                         "meta": json.loads(meta_path.read_text(encoding="utf-8"))})
     return runs
 
 
@@ -79,6 +87,10 @@ def render(stats: list) -> str:
         f"（其中 {first.get('n_warmup', '?')} 句為 warmup，不計入統計）",
         f"樣本檔雜湊：`{first.get('samples_sha256', '')[:16]}…`　"
         f"torch {first.get('torch', '?')} / transformers {first.get('transformers', '?')}",
+        "",
+        "> ⚠️ **此為模型端延遲，非端到端延遲。** 量的是「收到一句文字 → 分類結果」，",
+        "> **不含語音辨識**。語音辨識屬上游模組職責，之後串接完整 pipeline 時",
+        "> 兩者相加才是使用者感受到的延遲。",
         "",
         "產品場景是單句即時處理，因此以下全部是 batch=1 的單句延遲。",
         "",

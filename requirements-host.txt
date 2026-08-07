@@ -1,0 +1,20 @@
+# -*- coding: utf-8 -*-
+# ↑ 這行不能刪：pip 在中文 Windows 上會以系統 ANSI 編碼（cp950）讀取這個檔案，
+#   遇到 UTF-8 的中文註解會拋 UnicodeDecodeError。pip 支援 PEP 263 的編碼宣告，
+#   有這行才會改用 UTF-8 解讀。
+#
+# 主機端（Windows）錄音專用依賴。
+#
+# ⚠️ 這份與容器的 requirements.txt 是分開的，**不要**在這裡加 torch、transformers
+#    或 faster-whisper。主機只負責從麥克風收音並寫出 wav；所有模型都跑在容器裡。
+#
+# 之所以分家：Docker Desktop on Windows 不支援音訊裝置直通（容器內沒有
+# /dev/snd、沒有 PulseAudio），錄音只能在主機做。但這不是把整套 ML 環境
+# 搬上主機的理由 —— 主機裝得越少，環境差異造成的問題就越少。
+#
+# 建議裝在專案內的獨立虛擬環境，不要裝進全域 Python：
+#   python -m venv _local/hostenv
+#   _local/hostenv/Scripts/python -m pip install -r requirements-host.txt
+
+sounddevice     # 跨平台錄音，內含 PortAudio 二進位檔，Windows 免另外安裝
+numpy           # sounddevice 的錄音緩衝就是 numpy array

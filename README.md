@@ -119,10 +119,75 @@ docker compose run --rm app-cpu python scripts/summarize.py
 
 **逐句結果不進版控**（含資料集原文，且重跑即有）；不含原文的速度摘要見 `results/summary.md`。
 
-## 目前的範圍與後續
+## 真實麥克風輸入
 
-現階段的上游是假的：句子取自資料集，由 `imood_stream/source.py` 以隨機間隔送出。因此 `results/summary.md` 的數字是**模型端延遲**——從拿到一句文字到得出結果，不含語音辨識。
+`--input mic` 改用麥克風即時收音：錄音 → faster-whisper 轉文字 → 送入同一套分類邏輯。
 
-下一步是接上真實的前置模組（麥克風收音 → 語音轉文字 → 送入分類）。屆時只需替換 `source.py`，`classifier.py` 與 `recorder.py` 不受影響；但端到端延遲會另外包含語音辨識與斷句的耗時，與本份 baseline 不可直接相比。
+### 為什麼要開兩個視窗
+
+Docker Desktop on Windows **不支援音訊裝置直通**（容器內沒有 `/dev/snd`、沒有 PulseAudio），麥克風只能在主機讀取。因此錄音在主機、辨識與分類在容器，中間以 wav 檔交接：
+
+```
+主機                                容器
+scripts/record_mic.py   ──wav──►   run_stream.py --input mic
+sounddevice 錄音、切段              faster-whisper → 分類 → 落地
+```
+
+主機端刻意只依賴 `sounddevice` 與 `numpy`，不碰任何機器學習套件。
+
+### 主機端設定（只需一次）
+
+```bash
+python -m venv _local/hostenv
+_local/hostenv/Scripts/python -m pip install -r requirements-host.txt
+
+# 確認麥克風收得到聲音（會即時顯示音量，請對著麥克風說話）
+_local/hostenv/Scripts/python scripts/record_mic.py --check
+```
+
+### 執行
+
+```bash
+# 視窗一（主機）：錄音
+_local/hostenv/Scripts/python scripts/record_mic.py
+
+# 視窗二（容器）：辨識與分類
+docker compose run --rm app python run_stream.py --input mic --device cpu
+```
+
+Whisper 走 GPU、分類器走 CPU：分類器在間隔輸入下 CPU 本來就比較快，兩者剛好不搶資源。
+
+麥克風參數：
+
+| 參數 | 說明 |
+| --- | --- |
+| `--chunk-sec N` | 每段秒數，預設 4.0。樣本的中位句長約需 4.2 秒說完，切太短會頻繁截斷句子 |
+| `--queue-size N` | 有界佇列長度，預設 8（約 32 秒語音）。滿了丟棄**最舊**的，保留最新 |
+| `--whisper-model` | 預設 `small`；現場吃緊可改 `base` |
+| `--vad-filter` | 啟用 Whisper 內建的靜音過濾。預設關閉，VAD 整合為後續工作 |
+| `--input simulated` | 隨時切回模擬串流，不需要麥克風 |
+
+### 已知限制
+
+固定秒數切分**必然**會切在句子中間。壓力測試（[`results/fragment_robustness.md`](results/fragment_robustness.md)）量出代價：不完整片段的預測類別改變率 **29.5%**，而平均信心只下降 7.7%。
+
+> ⚠️ **信心分數不能用來判斷句子是否被截斷。** 模型在誤判片段時仍然給出高信心，下游若以 confidence 設門檻過濾，擋不掉被切斷的句子。
+
+因此在送進分類器之前先做文字層過濾：空白、純標點、少於 4 字、已知的語音辨識幻覺一律不產生情緒事件。實測「只有標點」會被判為憤怒語調（信心 0.617）、單一字元會被判為疑問語調（信心 0.884），這些若不擋掉會產生高信心的錯誤事件。
+
+## 輸出
+
+| 用途 | 路徑 | 內容 |
+| --- | --- | --- |
+| 評估 | `_local/out/*.jsonl` | 完整 8 類機率、四段耗時、裝置、來源 |
+| 下游 | `_local/downstream/*.jsonl` | 精簡封包：`ts` / `text` / `emotion` / `confidence` |
+
+下游封包給 Emotion Video Selector 與 JoyGen 參考，一行一筆串流寫入，`tail -f` 即可消費。欄位目前是最小可用集合，依實際需求再擴充。
+
+## 延遲的定義
+
+本專案量測的是**模型端延遲**：從收到一句文字到分類結果產出，**不含語音辨識**。語音辨識耗時另外記錄在 `transcribe_ms`，不併入 `latency_ms` —— 那屬於上游模組的職責，混在一起在串接完整 pipeline 時會重複計算。
+
+使用者實際感受到的延遲另外還包含：等待切分窗填滿（平均 `chunk-sec` 的一半）與語音辨識時間。
 
 更新紀錄見 [`CHANGELOG.md`](CHANGELOG.md)。

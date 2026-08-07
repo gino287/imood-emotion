@@ -20,12 +20,19 @@ MAX_GAP_SEC = 3.0
 
 @dataclass
 class Utterance:
-    """上游送來的一句話。"""
+    """上游送來的一句話。模擬來源與麥克風來源共用這個型別。"""
 
     seq: int
     text: str
     gap_sec: float          # 與前一句的間隔，用來對照「上游多快」與「我們多快」
     dataset_label: str = ""  # 資料集原標註，僅供人工檢視，不參與計算
+
+    # 以下只有麥克風來源會填
+    transcribe_ms: float | None = None  # 語音轉文字耗時。**不計入** latency_ms，
+                                        # 那是上游模組的職責，混在一起之後端到端
+                                        # 串接會重複計算
+    raw_text: str = ""                  # Whisper 轉繁體前的原始輸出，
+                                        # 用來事後確認簡轉繁確實生效
 
 
 def load_samples(path: Path) -> list:

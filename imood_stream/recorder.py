@@ -24,12 +24,14 @@ class Recorder:
     不會整批丟失。
     """
 
-    def __init__(self, out_path: Path, device: str, model_id: str, samples_path: Path):
+    def __init__(self, out_path: Path, device: str, model_id: str, samples_path: Path,
+                 source: str = "simulated"):
         self.out_path = out_path
         self.meta_path = out_path.with_suffix(".meta.json")
         self.device = device
         self.model_id = model_id
         self.samples_path = samples_path
+        self.source = source
         self.records = []
         self._fh = None
 
@@ -49,6 +51,8 @@ class Recorder:
         rec = {
             "seq": utt.seq,
             "warmup": warmup,
+            "source": self.source,   # simulated / mic：兩種來源的紀錄若無法區分，
+                                     # 混在同一批分析會得到錯誤結論
             "recv_at": now_iso(),
             "gap_sec": utt.gap_sec,
             "text": utt.text,
@@ -59,6 +63,11 @@ class Recorder:
             "device": self.device,
             "dataset_label": utt.dataset_label,
         }
+        if utt.transcribe_ms is not None:
+            # 語音轉文字耗時獨立記錄，**不併入 latency_ms**：
+            # 那是上游模組的職責，混在一起之後端到端串接會重複計算
+            rec["transcribe_ms"] = utt.transcribe_ms
+            rec["raw_text"] = utt.raw_text
         self._fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
         self._fh.flush()
         self.records.append(rec)
@@ -76,6 +85,7 @@ class Recorder:
 
         meta = {
             "timestamp": now_iso(),
+            "source": self.source,
             "model_id": self.model_id,
             "model_revision": MODEL_REVISION,
             "dataset_revision": SAMPLE_DATASET_REVISION,

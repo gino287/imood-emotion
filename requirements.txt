@@ -6,6 +6,9 @@ transformers==5.14.1            # 釘版本：已驗證可用的版本
 datasets                        # 取用 Hugging Face 上的樣本資料集
 requests
 
+faster-whisper                  # 語音轉文字。後端是 ctranslate2 不是 torch，
+                                # 走 CUDA 需要 base image 提供的 cuBLAS 與 cuDNN 9
+
 numpy                           # 統計指標自行以 numpy 實作。
                                 # 刻意不裝 scikit-learn：所需公式皆為短函式，
                                 # 少一個含 scipy 的依賴，image 小幾百 MB
