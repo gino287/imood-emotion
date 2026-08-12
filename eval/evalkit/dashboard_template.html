@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>imood BERT 評測儀表板</title>
+<style>
+:root{
+  --bg:#fbfbfa; --panel:#fff; --ink:#1f1e1c; --muted:#6b6862; --line:#e5e2dc;
+  --accent:#c65d3b; --accent-soft:#f2e3dc; --good:#3f7d5c; --warn:#b8860b;
+}
+@media (prefers-color-scheme:dark){
+  :root{ --bg:#191817; --panel:#232120; --ink:#eceae6; --muted:#a19c95; --line:#37342f;
+         --accent:#e0805c; --accent-soft:#3a2a24; --good:#6fae8a; --warn:#d4a63c; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:15px/1.6 -apple-system,"Segoe UI","Noto Sans TC","Microsoft JhengHei",sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 20px 80px}
+h1{font-size:24px;margin:0 0 4px}
+h2{font-size:18px;margin:36px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+h3{font-size:15px;margin:20px 0 8px;color:var(--muted);font-weight:600}
+.sub{color:var(--muted);font-size:13px;margin-bottom:20px}
+.sub code{background:var(--panel);padding:1px 5px;border-radius:4px;font-size:12px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:18px 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.card .k{font-size:12px;color:var(--muted);margin-bottom:6px}
+.card .v{font-size:26px;font-weight:650;letter-spacing:-.5px}
+.card .n{font-size:11px;color:var(--muted);margin-top:4px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:14px}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{padding:7px 10px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-weight:600;color:var(--muted);font-size:12px;text-transform:none}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+select,input[type=text]{background:var(--panel);color:var(--ink);border:1px solid var(--line);
+  border-radius:7px;padding:6px 10px;font-size:13.5px;font-family:inherit}
+label.f{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);margin-right:14px}
+.bars{display:flex;flex-direction:column;gap:5px;margin-top:8px}
+.bar{display:grid;grid-template-columns:150px 1fr 92px;align-items:center;gap:10px;font-size:13px}
+.bar .t{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar .track{background:var(--accent-soft);border-radius:4px;height:16px;overflow:hidden}
+.bar .fill{background:var(--accent);height:100%;border-radius:4px}
+.bar .n{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted);font-size:12px}
+.hist{display:flex;align-items:flex-end;gap:1px;height:120px;margin-top:10px}
+.hist div{flex:1;background:var(--accent);opacity:.75;min-height:1px;border-radius:2px 2px 0 0}
+.axis{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px}
+.note{font-size:12.5px;color:var(--muted);margin-top:8px;line-height:1.7}
+.tag{display:inline-block;padding:1px 7px;border-radius:20px;font-size:11.5px;background:var(--accent-soft);color:var(--accent)}
+.ok{color:var(--good);font-weight:600}
+.bad{color:var(--accent);font-weight:600}
+.warnc{color:var(--warn);font-weight:600}
+.err td{background:color-mix(in srgb,var(--accent) 7%,transparent)}
+tr.wrapme td{white-space:normal}
+.hint{background:var(--accent-soft);border-left:3px solid var(--accent);padding:10px 14px;
+  border-radius:0 8px 8px 0;font-size:13px;margin:10px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1 id="title">評測儀表板</h1>
+  <div class="sub" id="subtitle"></div>
+
+  <div class="cards" id="cards"></div>
+
+  <h2>映射方案比較</h2>
+  <div class="panel">
+    <div class="note">同一份推論結果套用不同映射表重算，成本為零 —— 這就是把映射從推論裡拆出來的意義。</div>
+    <div class="scroll"><table id="mapcmp"></table></div>
+  </div>
+
+  <h2>準確度指標</h2>
+  <div class="panel">
+    <label class="f">映射
+      <select id="selMapping"></select>
+    </label>
+    <label class="f">視角
+      <select id="selView">
+        <option value="strict">strict — 棄權算答錯（產品實際表現）</option>
+        <option value="covered">covered — 只算有映射的子集</option>
+        <option value="subset">subset — 只算模型表達得出的標籤</option>
+      </select>
+    </label>
+    <div class="note" id="viewDesc"></div>
+    <h3>各類別</h3>
+    <div class="scroll"><table id="perclass"></table></div>
+    <h3>混淆矩陣（列＝真實，欄＝預測）</h3>
+    <div class="scroll"><table id="confusion"></table></div>
+  </div>
+
+  <h2>雙向類別分佈</h2>
+  <div class="panel">
+    <div class="note">方向一回答「某個六類標籤的句子容易被誤判成什麼」，方向二回答「某個模型類別到底抓到了哪些真實情緒，是不是名不符實」。</div>
+    <h3>方向一：六類標籤 → 模型原生類別的分佈</h3>
+    <label class="f">選擇六類標籤 <select id="selTrue"></select></label>
+    <div class="bars" id="barsTrue"></div>
+    <h3>方向二：模型原生類別 → 六類標籤的分佈</h3>
+    <label class="f">選擇原生類別 <select id="selRaw"></select></label>
+    <div class="bars" id="barsRaw"></div>
+  </div>
+
+  <h2>mapping-free 指標</h2>
+  <div class="panel">
+    <div class="note">完全不看映射表，直接從「原生類別 × 六類標籤」的列聯表算。用數字判斷映射成不成立，不用看圓餅圖猜。</div>
+    <div class="cards" id="mfCards"></div>
+    <h3>最佳映射（資料說了算）vs 目前映射</h3>
+    <div class="scroll"><table id="bestmap"></table></div>
+    <h3>每組映射的雙向支持度</h3>
+    <div class="note">precision = P(真實=目標 ｜ 原生=該類)：判成這類的句子裡，真的有多少是目標標籤。<br>
+      recall = P(原生=該類 ｜ 真實=目標)：真的是目標標籤的句子裡，有多少被判成這類。</div>
+    <div class="scroll"><table id="support"></table></div>
+  </div>
+
+  <h2>延遲與資源</h2>
+  <div class="panel">
+    <div class="scroll"><table id="latency"></table></div>
+    <h3>單句總延遲分佈（batch=1，產品場景）</h3>
+    <div class="hist" id="hist"></div>
+    <div class="axis" id="histAxis"></div>
+  </div>
+
+  <h2>信心校準</h2>
+  <div class="panel">
+    <div class="hint" id="calHint"></div>
+    <h3>門檻覆蓋率表 — 「要不要加 confidence threshold」看這張</h3>
+    <div class="scroll"><table id="thresholds"></table></div>
+    <h3>reliability：各信心區間的實際準確率</h3>
+    <div class="bars" id="reliability"></div>
+  </div>
+
+  <h2>錯誤瀏覽器</h2>
+  <div class="panel">
+    <label class="f">只看 <select id="fCorrect">
+      <option value="err">答錯的</option>
+      <option value="all">全部</option>
+      <option value="ok">答對的</option>
+    </select></label>
+    <label class="f">真實標籤 <select id="fTrue"></select></label>
+    <label class="f">原生輸出 <select id="fRaw"></select></label>
+    <label class="f">搜尋 <input type="text" id="fText" placeholder="句子內容…" size="18"></label>
+    <div class="note" id="browseCount"></div>
+    <div class="scroll"><table id="browser"></table></div>
+  </div>
+</div>
+
+<script>
+const DATA = /*__PAYLOAD__*/null;
+
+const pct = v => (v === null || v === undefined) ? "—" : (v * 100).toFixed(1) + "%";
+const el = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function table(node, head, rows){
+  node.innerHTML = "<thead><tr>" + head.map(h =>
+      `<th class="${h.num?'num':''}">${esc(h.t !== undefined ? h.t : h)}</th>`).join("") +
+    "</tr></thead><tbody>" + rows.map(r =>
+      "<tr>" + r.map(c => typeof c === "object" && c !== null
+        ? `<td class="${c.num?'num':''}">${c.html || esc(c.v)}</td>`
+        : `<td>${esc(c)}</td>`).join("") + "</tr>").join("") + "</tbody>";
+}
+
+function bars(node, dist, total){
+  const max = Math.max(...Object.values(dist), 1);
+  node.innerHTML = Object.entries(dist).map(([k, v]) => `
+    <div class="bar">
+      <div class="t" title="${esc(k)}">${esc(k)}</div>
+      <div class="track"><div class="fill" style="width:${(v / max * 100).toFixed(1)}%"></div></div>
+      <div class="n">${v}（${(v / total * 100).toFixed(1)}%）</div>
+    </div>`).join("");
+}
+
+// --- 標題與摘要 ------------------------------------------------------------
+const m = DATA.meta, env = m.environment;
+el("title").textContent = `評測儀表板 — ${m.model_key}`;
+el("subtitle").innerHTML =
+  `<code>${esc(m.hf_id)}</code> ｜ ${esc(m.device)} ｜ 文字變體 ${esc(m.text_variant)} ｜ ` +
+  `${m.n_sentences} 句 ｜ 測試集 <code>${esc(m.dataset_sha256.slice(0, 16))}…</code><br>` +
+  `torch ${esc(env.torch)} ｜ transformers ${esc(env.transformers)} ｜ ` +
+  `${esc(env.gpu || "CPU")} ｜ ${esc(env.timestamp)}`;
+
+const def = DATA.defaultMapping;
+const defRes = DATA.results[def];
+const nvml = m.vram.nvml_peak_process_mb;
+el("cards").innerHTML = [
+  ["Macro-F1（strict）", defRes.views.strict.macro_f1.toFixed(4), `映射 ${def}`],
+  ["p95 延遲", defRes.latency.total.p95.toFixed(1) + " ms", "batch=1，非平均值"],
+  ["VRAM 峰值", nvml ? nvml + " MB" : "—", "nvml，含 CUDA context"],
+  ["最佳映射上界", pct(defRes.mapping_free.best_possible.accuracy_upper_bound), "準確率天花板"],
+].map(([k, v, n]) => `<div class="card"><div class="k">${k}</div><div class="v">${v}</div><div class="n">${n}</div></div>`).join("");
+
+// --- 映射方案比較 ----------------------------------------------------------
+table(el("mapcmp"),
+  ["映射", {t:"strict Acc",num:1}, {t:"strict Macro-F1",num:1}, {t:"covered Acc",num:1},
+   {t:"coverage",num:1}, {t:"subset Macro-F1",num:1}],
+  Object.entries(DATA.results).map(([name, r]) => [
+    name + (name === def ? " ⭐" : ""),
+    {v: pct(r.views.strict.accuracy), num:1},
+    {v: r.views.strict.macro_f1.toFixed(4), num:1},
+    {v: pct(r.views.covered.accuracy), num:1},
+    {v: pct(r.views.covered.coverage), num:1},
+    {v: r.views.subset.macro_f1.toFixed(4), num:1},
+  ]));
+
+// --- 準確度指標 ------------------------------------------------------------
+const selMapping = el("selMapping"), selView = el("selView");
+selMapping.innerHTML = Object.keys(DATA.results)
+  .map(n => `<option value="${n}"${n === def ? " selected" : ""}>${n}${n === def ? " ⭐" : ""}</option>`).join("");
+
+function renderAccuracy(){
+  const r = DATA.results[selMapping.value];
+  const v = r.views[selView.value];
+  el("viewDesc").textContent = `${v.description} — 樣本數 ${v.n}` +
+    (v.coverage !== null ? `，coverage ${pct(v.coverage)}` : "");
+
+  table(el("perclass"),
+    ["標籤", "中文", {t:"precision",num:1}, {t:"recall",num:1}, {t:"F1",num:1}, {t:"樣本數",num:1}],
+    Object.entries(v.per_class).map(([label, s]) => [
+      label, DATA.labelZh[label] || "",
+      {v: pct(s.precision), num:1}, {v: pct(s.recall), num:1},
+      {v: s.f1.toFixed(4), num:1}, {v: s.support, num:1},
+    ]));
+
+  const c = v.confusion;
+  const maxCell = Math.max(1, ...c.rows.flatMap(t => c.cols.map(p => t === p ? 0 : c.matrix[t][p])));
+  table(el("confusion"),
+    ["真實＼預測"].concat(c.cols.map(x => ({t: x === "__abstain__" ? "（棄權）" : x, num:1}))),
+    c.rows.map(t => [t].concat(c.cols.map(p => {
+      const n = c.matrix[t][p];
+      const diag = t === p;
+      const a = diag ? 0.22 : (n / maxCell) * 0.55;
+      const col = diag ? "var(--good)" : "var(--accent)";
+      return {num:1, html:`<span style="display:block;padding:2px 6px;border-radius:4px;` +
+        `background:color-mix(in srgb,${col} ${(a*100).toFixed(0)}%,transparent)">${n}</span>`};
+    }))));
+
+  renderLatency(r);
+  renderCalibration(v);
+  renderMappingFree(r);
+}
+selMapping.onchange = () => { renderAccuracy(); renderBrowser(); };
+selView.onchange = renderAccuracy;
+
+// --- 雙向分佈 --------------------------------------------------------------
+const bd = defRes.bidirectional;
+el("selTrue").innerHTML = Object.keys(bd.by_true_label)
+  .map(k => `<option value="${k}">${k}（${DATA.labelZh[k] || ""}）— ${bd.by_true_label[k].total} 句</option>`).join("");
+el("selRaw").innerHTML = Object.keys(bd.by_raw_label)
+  .map(k => `<option value="${k}">${k} — ${bd.by_raw_label[k].total} 句</option>`).join("");
+
+function renderTrue(){ const d = bd.by_true_label[el("selTrue").value]; bars(el("barsTrue"), d.dist, d.total); }
+function renderRaw(){ const d = bd.by_raw_label[el("selRaw").value]; bars(el("barsRaw"), d.dist, d.total); }
+el("selTrue").onchange = renderTrue;
+el("selRaw").onchange = renderRaw;
+
+// --- mapping-free ----------------------------------------------------------
+function renderMappingFree(r){
+  const mf = r.mapping_free;
+  el("mfCards").innerHTML = [
+    ["最佳映射上界", pct(mf.best_possible.accuracy_upper_bound), "理想映射下的準確率天花板"],
+    ["目前映射準確率", pct(mf.current_strict_accuracy), "strict 視角"],
+    ["映射猜錯的損失", pct(mf.loss_from_mapping_choice), "上界 − 目前"],
+    ["NMI / ARI", mf.nmi + " / " + mf.ari, "不看映射的結構相關性"],
+  ].map(([k, v, n]) => `<div class="card"><div class="k">${k}</div><div class="v">${v}</div><div class="n">${n}</div></div>`).join("");
+
+  table(el("bestmap"),
+    ["原生類別", "資料說最該映到", "目前映射", "一致？"],
+    Object.entries(mf.best_possible.mapping).map(([raw, best]) => {
+      const cur = r.mapping[raw];
+      return [raw, best, cur === null ? "（棄權）" : cur,
+        {html: cur === best ? '<span class="ok">✅</span>' : '<span class="bad">⚠️</span>'}];
+    }));
+
+  table(el("support"),
+    ["原生類別", "映到", {t:"該類句數",num:1}, {t:"precision",num:1}, {t:"recall",num:1}],
+    mf.support.map(s => [
+      s.raw, s.target === null ? "（棄權）" : s.target,
+      {v: s.n_raw, num:1},
+      {num:1, html: s.precision === null || s.precision === undefined ? "—" :
+        `<span class="${s.precision < 0.3 ? "bad" : s.precision < 0.5 ? "warnc" : "ok"}">${pct(s.precision)}</span>`},
+      {v: pct(s.recall), num:1},
+    ]));
+}
+
+// --- 延遲 ------------------------------------------------------------------
+function renderLatency(r){
+  const L = r.latency, rows = [];
+  for (const part of ["total", "tokenize", "forward", "post"]){
+    if (!L[part]) continue;
+    const s = L[part];
+    rows.push([part, {v:s.mean.toFixed(2),num:1}, {v:s.p50.toFixed(2),num:1},
+               {v:s.p95.toFixed(2),num:1}, {v:s.p99.toFixed(2),num:1}, {v:s.max.toFixed(2),num:1}]);
+  }
+  rows.push(["模型載入（cold start）", {v:(m.model_load_seconds*1000).toFixed(0)+" ms",num:1},"","","",""]);
+  rows.push(["首次推論", {v:m.cold_start_ms.toFixed(1),num:1},"","","",""]);
+  if (m.vram.torch_peak_allocated_mb)
+    rows.push(["VRAM torch / nvml (MB)",
+      {v:m.vram.torch_peak_allocated_mb + " / " + (nvml || "—"),num:1},"","","",""]);
+  table(el("latency"),
+    ["項目（ms）", {t:"mean",num:1}, {t:"p50",num:1}, {t:"p95",num:1}, {t:"p99",num:1}, {t:"max",num:1}],
+    rows);
+
+  const h = L.histogram;
+  const mx = Math.max(...h.counts, 1);
+  el("hist").innerHTML = h.counts.map(c =>
+    `<div style="height:${(c / mx * 100).toFixed(1)}%" title="${c} 句"></div>`).join("");
+  el("histAxis").innerHTML = `<span>${h.edges[0]} ms</span><span>${h.edges[h.edges.length-1]} ms</span>`;
+}
+
+// --- 信心校準 --------------------------------------------------------------
+function renderCalibration(v){
+  const cal = v.calibration;
+  el("calHint").innerHTML =
+    `ECE = <b>${cal.ece}</b>（越接近 0，softmax 機率越貼近真實準確率）｜` +
+    `平均信心 ${pct(cal.mean_confidence)} vs 實際準確率 ${pct(cal.overall_accuracy)}` +
+    (cal.mean_confidence > cal.overall_accuracy + 0.05 ? " — 模型過度自信" : "");
+
+  table(el("thresholds"),
+    [{t:"信心門檻",num:0}, {t:"覆蓋率",num:1}, {t:"保留句數",num:1}, {t:"該子集準確率",num:1}],
+    cal.thresholds.map(t => ["≥ " + t.threshold, {v:pct(t.coverage),num:1},
+      {v:t.kept,num:1}, {v:pct(t.accuracy),num:1}]));
+
+  const dist = {}, accs = {};
+  cal.reliability.forEach(b => {
+    if (!b.count) return;
+    const key = b.lo.toFixed(1) + "–" + b.hi.toFixed(1);
+    dist[key] = b.count; accs[key] = b.accuracy;
+  });
+  const total = Object.values(dist).reduce((a, b) => a + b, 0) || 1;
+  const max = Math.max(...Object.values(dist), 1);
+  el("reliability").innerHTML = Object.entries(dist).map(([k, c]) => `
+    <div class="bar">
+      <div class="t">信心 ${k}</div>
+      <div class="track"><div class="fill" style="width:${(c / max * 100).toFixed(1)}%"></div></div>
+      <div class="n">${c} 句｜準確 ${pct(accs[k])}</div>
+    </div>`).join("");
+}
+
+// --- 錯誤瀏覽器 ------------------------------------------------------------
+const trues = [...new Set(DATA.sentences.map(s => s.true))].sort();
+const raws = [...new Set(DATA.sentences.map(s => s.raw))].sort();
+el("fTrue").innerHTML = '<option value="">全部</option>' + trues.map(t => `<option>${t}</option>`).join("");
+el("fRaw").innerHTML = '<option value="">全部</option>' + raws.map(t => `<option>${t}</option>`).join("");
+
+function renderBrowser(){
+  const mapName = selMapping.value;
+  const mode = el("fCorrect").value, ft = el("fTrue").value, fr = el("fRaw").value;
+  const q = el("fText").value.trim();
+
+  const rows = DATA.sentences.filter(s => {
+    const pred = s.mapped[mapName];
+    const ok = pred === s.true;
+    if (mode === "err" && ok) return false;
+    if (mode === "ok" && !ok) return false;
+    if (ft && s.true !== ft) return false;
+    if (fr && s.raw !== fr) return false;
+    if (q && !s.text.includes(q)) return false;
+    return true;
+  });
+
+  el("browseCount").textContent = `符合 ${rows.length} 句（共 ${DATA.sentences.length} 句），最多顯示 300 筆`;
+  const head = ["id", "真實", "原生輸出", "映射後", {t:"信心",num:1}, {t:"ms",num:1}, "句子"];
+  el("browser").innerHTML = "<thead><tr>" +
+    head.map(h => `<th class="${h.num?'num':''}">${esc(h.t !== undefined ? h.t : h)}</th>`).join("") +
+    "</tr></thead><tbody>" + rows.slice(0, 300).map(s => {
+      const pred = s.mapped[mapName];
+      const ok = pred === s.true;
+      return `<tr class="wrapme ${ok ? "" : "err"}">
+        <td>${s.id}</td><td>${esc(s.true)}</td><td>${esc(s.raw)}</td>
+        <td>${pred === null ? "（棄權）" : esc(pred)}</td>
+        <td class="num">${s.conf.toFixed(3)}</td>
+        <td class="num">${s.lat.toFixed(1)}</td>
+        <td>${esc(s.text)}</td></tr>`;
+    }).join("") + "</tbody>";
+}
+["fCorrect", "fTrue", "fRaw"].forEach(id => el(id).onchange = renderBrowser);
+el("fText").oninput = renderBrowser;
+
+renderAccuracy(); renderTrue(); renderRaw(); renderBrowser();
+</script>
+</body>
+</html>

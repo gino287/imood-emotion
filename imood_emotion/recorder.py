@@ -7,6 +7,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import torch
+import transformers
+
+from .labels import MODEL_REVISION, SAMPLE_DATASET_REVISION
 
 
 def now_iso() -> str:
@@ -24,14 +27,12 @@ class Recorder:
     不會整批丟失。
     """
 
-    def __init__(self, out_path: Path, device: str, model_id: str, samples_path: Path,
-                 source: str = "simulated"):
+    def __init__(self, out_path: Path, device: str, model_id: str, samples_path: Path):
         self.out_path = out_path
         self.meta_path = out_path.with_suffix(".meta.json")
         self.device = device
         self.model_id = model_id
         self.samples_path = samples_path
-        self.source = source
         self.records = []
         self._fh = None
 
@@ -45,29 +46,25 @@ class Recorder:
             self._fh.close()
         return False
 
-    def write(self, utt, pred, warmup: bool) -> dict:
+    def write(self, utt, pred, warmup: bool, preprocess_ms: float = 0.0) -> dict:
         # 欄位順序刻意安排：seq / text / pred_label 排前面，掃 jsonl 時
         # 一行的前 80 字元就看得懂；8 鍵的 probs 放後面免得洗版。
         rec = {
             "seq": utt.seq,
             "warmup": warmup,
-            "source": self.source,   # simulated / mic：兩種來源的紀錄若無法區分，
-                                     # 混在同一批分析會得到錯誤結論
             "recv_at": now_iso(),
             "gap_sec": utt.gap_sec,
             "text": utt.text,
             "pred_label": pred.label,
             "confidence": pred.confidence,
+            # 前處理耗時獨立記錄，**不併入 latency_ms**。latency_ms 的定義是
+            # tokenize/forward/post 三段，動這個定義就會讓新舊 baseline 不能比。
+            "preprocess_ms": round(preprocess_ms, 3),
             "latency_ms": pred.latency_ms,
             "probs": pred.probs,
             "device": self.device,
             "dataset_label": utt.dataset_label,
         }
-        if utt.transcribe_ms is not None:
-            # 語音轉文字耗時獨立記錄，**不併入 latency_ms**：
-            # 那是上游模組的職責，混在一起之後端到端串接會重複計算
-            rec["transcribe_ms"] = utt.transcribe_ms
-            rec["raw_text"] = utt.raw_text
         self._fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
         self._fh.flush()
         self.records.append(rec)
@@ -79,13 +76,8 @@ class Recorder:
         CPU 與 GPU 各產一份 jsonl，沒有這個檔案，過幾天就分不出哪份是哪次跑的、
         當時是什麼版本、用的是不是同一份樣本。
         """
-        import transformers
-
-        from .labels import MODEL_REVISION, SAMPLE_DATASET_REVISION
-
         meta = {
             "timestamp": now_iso(),
-            "source": self.source,
             "model_id": self.model_id,
             "model_revision": MODEL_REVISION,
             "dataset_revision": SAMPLE_DATASET_REVISION,

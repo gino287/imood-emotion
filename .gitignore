@@ -1,22 +1,22 @@
-# 另一套評測框架與其凍結測試集。所用資料集有自身授權條款，不隨本 repo 散布；
-# 測試集由固定 seed 的腳本重建，存檔案沒有意義。
-_sandbox/
-
-# 本地工作檔。這三條規則涵蓋所有本地檔，新增檔案時不必逐一記得加。
+# 本地筆記：整包不進 git。公私邊界的定義見 CLAUDE.md。
 CLAUDE.md
-_notes/
-*.local.md
+notes/
 
-# 執行期產物：抽樣樣本、逐句推論結果
+# 執行期產物：抽樣樣本、逐句推論結果、下游封包
 _local/
 
-# 本機專屬的 compose 疊加層（掛載路徑因人而異）
-docker-compose.override.yml
+# 跨模型評測框架：程式碼（configs/evalkit/scripts）正常進版控，讓協作者看得到評測邏輯；
+# 但底下這兩個目錄不進：
+#   data/    資料集原文，有自身授權條款；反正由固定 seed 的腳本重建，存檔案沒意義
+#   results/ predictions.jsonl 是逐句明細，一樣含資料集原文
+# 不含原文的 report.md / metrics.json 若要進版控，個別 git add -f。
+eval/data/
+eval/results/
 
 # 逐句推論結果含資料集原文；results/ 只收不含原文的摘要
 results/*.jsonl
 
-# 金鑰（HF_TOKEN 走 --env-file 帶進容器，不進版控）
+# 金鑰（HF_TOKEN 走 env_file 帶進容器，不進版控）
 .env
 .secrets/
 

@@ -66,4 +66,4 @@ GPU：NVIDIA GeForce RTX 3050 Laptop GPU　張量峰值 1084 MB／保留 1122 MB
 
 ---
 
-產生時間：2026-08-06T14:38:12+00:00　由 `scripts/summarize.py` 產出，逐句結果不進版控。
+產生時間：2026-08-06T14:38:12+00:00　由 `checks/summarize.py` 產出，逐句結果不進版控。

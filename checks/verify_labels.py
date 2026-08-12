@@ -1,6 +1,7 @@
 """驗證模型輸出順序與標籤名的對應是否正確。
 
-    python scripts/verify_labels.py [--per-class 60]
+    docker compose -f docker/docker-compose.yml run --rm app-cpu \
+        python checks/verify_labels.py [--per-class 60]
 
 模型的 config.json 只有 `LABEL_0..LABEL_7` 佔位符，順序取自 model card，
 **無法由模型檔案本身驗證**。而順序接錯是分類任務最典型的靜默錯誤 ——
@@ -9,7 +10,7 @@
 改以行為驗證：拿資料集的標註句跑一輪，看混淆矩陣的對角線在不在。
 順序正確時對角線會明顯浮出；接錯時整體對角率會掉到隨機水準（八類為 12.5%）。
 
-任何時候改動 `imood_stream/labels.py` 的順序、或換模型／換資料集版本，
+任何時候改動 `imood_emotion/labels.py` 的順序、或換模型／換資料集版本，
 都應該重跑這支腳本。
 """
 import argparse
@@ -21,18 +22,19 @@ from random import Random
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import torch  # noqa: E402
+from datasets import load_dataset  # noqa: E402
 from transformers import (  # noqa: E402
     AutoModelForSequenceClassification,
     AutoTokenizer,
 )
 
-from imood_stream.labels import (  # noqa: E402
+from imood_emotion.classifier import MAX_LENGTH, MODEL_ID  # noqa: E402
+from imood_emotion.labels import (  # noqa: E402
     MODEL_REVISION,
     NATIVE_LABELS,
     SAMPLE_DATASET_ID,
     SAMPLE_DATASET_REVISION,
 )
-from imood_stream.classifier import MAX_LENGTH, MODEL_ID  # noqa: E402
 
 # 對角率低於這個值就視為失敗。隨機水準是 12.5%，實測為 87.9%，
 # 門檻取 50% —— 遠高於隨機、又留足模型本身表現不佳的空間。
@@ -45,8 +47,6 @@ def main():
     p.add_argument("--per-class", type=int, default=60, help="每類抽幾句（預設 60）")
     p.add_argument("--seed", type=int, default=20260806)
     args = p.parse_args()
-
-    from datasets import load_dataset
 
     ds = load_dataset(SAMPLE_DATASET_ID, split="train", revision=SAMPLE_DATASET_REVISION)
     rows = [{"text": r["text"], "emotion": r["emotion"]} for r in ds]
@@ -100,7 +100,7 @@ def main():
     if overall < MIN_DIAGONAL_RATE:
         raise SystemExit(
             f"\n✗ 對角率過低，標籤順序極可能接錯。\n"
-            f"  請核對 imood_stream/labels.py 的 NATIVE_LABELS 與 model card 的 label_mapping。"
+            f"  請核對 imood_emotion/labels.py 的 NATIVE_LABELS 與 model card 的 label_mapping。"
         )
     print("✓ 標籤順序正確：八類的對角線皆浮出，遠高於隨機水準")
 

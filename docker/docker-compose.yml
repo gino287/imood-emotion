@@ -1,0 +1,86 @@
+# imood-emotion 的執行環境。
+#
+# ⚠️ compose 檔不在專案根目錄，所以每個指令都要帶 -f：
+#
+#   docker compose -f docker/docker-compose.yml build
+#   docker compose -f docker/docker-compose.yml run --rm app-cpu \
+#       python scripts/run_baseline.py --device cpu --limit 200
+#   docker compose -f docker/docker-compose.yml run --rm app \
+#       python scripts/run_baseline.py --device cuda --limit 200
+#
+# 三個服務：
+#   app      BERT 情緒分類，掛 GPU
+#   app-cpu  同一個 image，不掛 GPU 的對照組
+#   stt      語音轉文字，另一個 image（依賴與 BERT 完全分開）
+#
+# ⚠️ 這個檔案裡的相對路徑，一律是相對於 docker/ 這個資料夾，不是專案根目錄。
+
+# 明確指定專案名稱。不指定的話 compose 會拿所在資料夾名（docker）當專案名，
+# 之後 docker ps 看到的東西會叫「docker-app-1」，認不出來是哪個專案。
+name: imood-emotion
+
+x-common: &common
+  build:
+    context: ..                 # build context 是專案根目錄
+    dockerfile: docker/dockerfile   # 這個路徑相對於 context
+  image: imood-emotion
+  volumes:
+    # 整個專案資料夾掛進去：改 .py 不用重 build，只有動到 requirements.txt 才要重 build。
+    # HF_HOME 在 dockerfile 裡設成 /app/.cache/huggingface，落在這個掛載範圍內，
+    # 所以主機直接跑 python 與容器內跑共用同一份模型快取，模型只下載一次。
+    - ..:/app
+    # SMP2020 原始資料在專案外層，只有 eval/scripts/build_testset.py 用得到。
+    # 路徑因人而異，所以走 .env 的 REFS_DIR 帶進來（範本見 .env.example）。
+    #
+    # 沒設定時退回 ./empty（docker/empty/，repo 內已存在的空資料夾）。
+    # 刻意不讓預設值指向專案外的路徑：來源不存在時 Docker 會靜默造一個空目錄，
+    # 不報錯但行為很怪，之前踩過。
+    - ${REFS_DIR:-./empty}:/refs:ro
+  env_file:
+    # required: false —— 沒有 .env 也要能 build 能跑。
+    # .env 不進版控（見 .env.example），少了這行新 clone 會直接失敗。
+    - path: ../.env
+      required: false
+  working_dir: /app
+
+services:
+  # 主要服務：借用主機 GPU
+  app:
+    <<: *common
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  # CPU 對照組。部署硬體未定，且這張 4GB 卡要與 pipeline 上的其他模型
+  # （Moshi、JoyGen）共用，CPU 路線必須有數字備著。
+  # 這個服務不掛 GPU，確保量到的是乾淨的 CPU 數字。
+  app-cpu:
+    <<: *common
+
+  # 語音轉文字。獨立的 image，裝的是 stt/requirements.txt，
+  # 不含 transformers；BERT 那兩個服務也不含 faster-whisper。
+  #
+  #   docker compose -f docker/docker-compose.yml run --rm stt \
+  #       python stt/transcribe.py 某個音檔.wav
+  stt:
+    build:
+      context: ..
+      dockerfile: docker/dockerfile.stt
+    image: imood-emotion-stt
+    volumes:
+      - ..:/app
+    env_file:
+      - path: ../.env
+        required: false
+    working_dir: /app
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

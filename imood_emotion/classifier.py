@@ -36,7 +36,7 @@ def resolve_device(requested: str) -> str:
             raise SystemExit(
                 "指定了 --device cuda，但 torch.cuda.is_available() 為 False。\n"
                 "  不自動降級成 CPU：那會產生標示錯誤的量測結果。\n"
-                "  請改用 `docker compose run --rm app`（掛 GPU 的服務），"
+                "  請改用掛了 GPU 的服務（compose 裡的 app，不是 app-cpu），"
                 "或明確指定 --device cpu / --device auto。"
             )
         return "cuda"
@@ -115,7 +115,7 @@ class EmotionClassifier:
                 f"模型 {self.model_id} 的標籤與設定不符，中止。\n"
                 f"  設定 : {NATIVE_LABELS}\n"
                 f"  模型 : {actual}\n"
-                "請更新 imood_stream/labels.py。"
+                "請更新 imood_emotion/labels.py。"
             )
         print(f"  標籤核對通過：模型 config 的 {len(actual)} 類與設定一致")
 

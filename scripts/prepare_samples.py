@@ -1,6 +1,7 @@
 """從 Hugging Face 抽出串流 demo 用的樣本句。
 
-    python scripts/prepare_samples.py --limit 25
+    docker compose -f docker/docker-compose.yml run --rm app-cpu \
+        python scripts/prepare_samples.py --limit 25
 
 輸出 `_local/samples.jsonl`（不進版控）並印出 SHA-256。
 seed 固定，任何人重跑得到位元組完全相同的一份 —— 存腳本比存資料有意義，
@@ -16,7 +17,9 @@ from random import Random
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from imood_stream.labels import (  # noqa: E402
+from datasets import load_dataset  # noqa: E402
+
+from imood_emotion.labels import (  # noqa: E402
     NATIVE_LABELS,
     SAMPLE_DATASET_ID,
     SAMPLE_DATASET_REVISION,
@@ -51,7 +54,7 @@ def assert_labels(rows) -> None:
             f"  資料集   : {sorted(actual)}\n"
             f"  只在模型 : {sorted(expected - actual) or '無'}\n"
             f"  只在資料 : {sorted(actual - expected) or '無'}\n"
-            "資料集內容可能已更新，請重新核對 imood_stream/labels.py。"
+            "資料集內容可能已更新，請重新核對 imood_emotion/labels.py。"
         )
 
     print("標籤核對通過：資料集 8 類與模型原生 8 類相符")
@@ -88,11 +91,6 @@ def sample(rows, limit: int, seed: int):
 
 def main():
     args = parse_args()
-
-    try:
-        from datasets import load_dataset
-    except ImportError:
-        raise SystemExit("缺少 datasets 套件。requirements.txt 已列出，請重跑 docker compose build")
 
     print(f"下載資料集：{SAMPLE_DATASET_ID}")
     print(f"  revision: {SAMPLE_DATASET_REVISION}（釘住 commit，避免上游更新後數字失去可比性）")

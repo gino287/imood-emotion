@@ -1,6 +1,7 @@
 """片段壓力測試：不完整輸入下，分類器的表現會掉多少。
 
-    python scripts/stress_fragments.py
+    docker compose -f docker/docker-compose.yml run --rm app-cpu \
+        python checks/stress_fragments.py
 
 固定秒數切分音訊必然會切在句子中間，模型拿到的是半句話。這支腳本在還沒接上
 麥克風的前提下先模擬同一件事：把完整句子在**非標點位置**隨機截斷，餵進分類器，
@@ -22,12 +23,12 @@ from random import Random
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from imood_stream.classifier import MODEL_ID, EmotionClassifier, resolve_device  # noqa: E402
+from imood_emotion.classifier import MODEL_ID, EmotionClassifier, resolve_device  # noqa: E402
 
 DEFAULT_SAMPLES = Path("_local/samples.jsonl")
 DEFAULT_OUT = Path("results/fragment_robustness.md")
-# 刻意不放 _local/out/：那裡是 run_stream.py 的執行結果，
-# 混進去會被 scripts/summarize.py 一起讀走
+# 刻意不放 _local/out/：那裡是 scripts/run_baseline.py 的執行結果，
+# 混進去會被 checks/summarize.py 一起讀走
 DETAIL_OUT = Path("_local/stress/fragment_detail.jsonl")
 
 # 保留比例的取樣範圍。低於 0.3 幾乎只剩幾個字，那已經不是「被切斷的句子」
@@ -62,7 +63,7 @@ def main():
     if not args.samples.exists():
         raise SystemExit(
             f"找不到 {args.samples}\n"
-            "請先執行：docker compose run --rm app-cpu python scripts/prepare_samples.py --limit 200"
+            "請先執行：docker compose -f docker/docker-compose.yml run --rm app-cpu python scripts/prepare_samples.py --limit 200"
         )
     rows = [json.loads(l) for l in args.samples.read_text(encoding="utf-8").splitlines() if l.strip()]
 
@@ -199,7 +200,7 @@ def write_outputs(records, errors, edge_results, device, out_path):
             lines.append(f"- 原長 {e['text_len']} → 片段 {e['frag_len']}：`{e['error']}`")
 
     lines += ["", "---", "",
-              "由 `scripts/stress_fragments.py` 產出。逐句結果含資料集原文，不進版控。", ""]
+              "由 `checks/stress_fragments.py` 產出。逐句結果含資料集原文，不進版控。", ""]
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text("\n".join(lines), encoding="utf-8")

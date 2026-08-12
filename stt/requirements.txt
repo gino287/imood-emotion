@@ -1,0 +1,11 @@
+# STT（音檔轉文字）專用依賴，與 BERT 那邊的 requirements.txt 分開。
+#
+# ⚠️ 不要在這裡加 transformers、datasets 等 BERT 端的套件，也不要在 BERT 那邊
+#    加 faster-whisper。分開的理由：只想要 BERT 情緒分類的人，不該被迫連帶抓
+#    一整套語音辨識依賴（decisions.md 的「容器單一職責」）。
+#
+# base image 已內建 torch，這裡同樣不要列 torch。
+
+faster-whisper                  # 後端是 ctranslate2 不是 torch，
+                                # 走 CUDA 需要 base image 提供的 cuBLAS 與 cuDNN 9
+numpy                           # 暖機用的空音訊緩衝

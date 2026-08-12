@@ -5,7 +5,9 @@
 引入執行緒同步只會多一個出錯的地方。
 
 ⚠️ 這個判斷有到期條件：若日後改成「累積多句才送」，或上游換成會主動 push
-   而不等待消費的真實模組，就必須改成 queue。屆時只需替換這一支。
+   而不等待消費的真實模組（例如接上真的麥克風），就必須改成 queue。
+   2026-08-07 曾經因為接麥克風而改成有界佇列，08/10 隨麥克風功能一起回滾；
+   之後要重做時，判斷標準還是這一條。屆時只需替換這一支。
 """
 import json
 import time
@@ -20,26 +22,21 @@ MAX_GAP_SEC = 3.0
 
 @dataclass
 class Utterance:
-    """上游送來的一句話。模擬來源與麥克風來源共用這個型別。"""
+    """上游送來的一句話。"""
 
     seq: int
     text: str
-    gap_sec: float          # 與前一句的間隔，用來對照「上游多快」與「我們多快」
+    gap_sec: float           # 與前一句的間隔，用來對照「上游多快」與「我們多快」
     dataset_label: str = ""  # 資料集原標註，僅供人工檢視，不參與計算
-
-    # 以下只有麥克風來源會填
-    transcribe_ms: float | None = None  # 語音轉文字耗時。**不計入** latency_ms，
-                                        # 那是上游模組的職責，混在一起之後端到端
-                                        # 串接會重複計算
-    raw_text: str = ""                  # Whisper 轉繁體前的原始輸出，
-                                        # 用來事後確認簡轉繁確實生效
 
 
 def load_samples(path: Path) -> list:
     if not path.exists():
         raise SystemExit(
             f"找不到樣本檔 {path}\n"
-            "請先執行：docker compose run --rm app-cpu python scripts/prepare_samples.py"
+            "請先執行：docker compose -f docker/docker-compose.yml run --rm app-cpu \
+"
+            "               python scripts/prepare_samples.py"
         )
     rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
     if not rows:

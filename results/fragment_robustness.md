@@ -56,4 +56,4 @@
 
 ---
 
-由 `scripts/stress_fragments.py` 產出。逐句結果含資料集原文，不進版控。
+由 `checks/stress_fragments.py` 產出。逐句結果含資料集原文，不進版控。

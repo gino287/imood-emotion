@@ -1,6 +1,7 @@
 """彙整各裝置的執行結果，產出不含資料集原文的速度摘要。
 
-    python scripts/summarize.py
+    docker compose -f docker/docker-compose.yml run --rm app-cpu \
+        python checks/summarize.py
 
 讀 `_local/out/*.jsonl` 與同名 `.meta.json`，寫出 `results/summary.md`。
 逐句結果含資料集原文、不進版控；這份摘要只有統計數字，可以進版控。
@@ -27,7 +28,7 @@ def percentile(values: list, q: float) -> float:
 def load_runs(in_dir: Path) -> list:
     """收集串流執行的結果。
 
-    判準是「有沒有配對的 .meta.json」：只有 run_stream.py 會同時產出這兩個檔案，
+    判準是「有沒有配對的 .meta.json」：只有 scripts/run_baseline.py 會同時產出這兩個檔案，
     其他落在同一個目錄的 jsonl（壓力測試的逐句明細、下游封包等）都沒有 meta。
     用檔名規則排除會隨著輸出種類變多而失效，用 meta 當判準才穩。
     """
@@ -200,7 +201,7 @@ def render(stats: list) -> str:
         "---",
         "",
         f"產生時間：{first.get('timestamp', '')}　"
-        "由 `scripts/summarize.py` 產出，逐句結果不進版控。",
+        "由 `checks/summarize.py` 產出，逐句結果不進版控。",
         "",
     ]
     return "\n".join(lines)
@@ -214,7 +215,7 @@ def main():
 
     runs = load_runs(args.in_dir)
     if not runs:
-        raise SystemExit(f"{args.in_dir} 底下沒有結果檔，請先執行 run_stream.py")
+        raise SystemExit(f"{args.in_dir} 底下沒有結果檔，請先執行 scripts/run_baseline.py")
 
     # 排序：CPU 在前、同裝置內「間隔到達」在前（間隔才是實際使用情境，該當主數字）
     stats = sorted((summarize_run(r) for r in runs),

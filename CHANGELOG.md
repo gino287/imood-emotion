@@ -1,5 +1,62 @@
 # 更新紀錄
 
+## 2026-08-12 — 回滾麥克風輸入，重整專案結構
+
+不加功能，只做回滾與重新分類：把 repo 收斂回「模擬串流 → 前處理 → BERT 推論 →
+輸出封包」這一條主線，讓每個檔案的歸屬一眼看得出來。分類器核心邏輯未更動，
+四種條件的預測結果與 08/06 的 baseline 逐句相同。
+
+### 移除
+
+- **真實麥克風即時輸入**（08/07 加入）：`scripts/record_mic.py`、
+  `imood_stream/mic_source.py`、`requirements-host.txt`，以及 `run_stream.py` 的
+  `--input mic`。回滾原因是把語音辨識塞進 BERT 容器違反容器單一職責 ——
+  只想要情緒分類的人會被迫連帶抓一整套語音辨識依賴。功能本身沒有問題。
+- **`docker-compose.override.yml`**：本機專屬掛載路徑改由 `.env` 的 `REFS_DIR`
+  帶入，`.env.example` 提供範本。單一 compose 檔案，不再需要疊加層。
+
+### 架構調整
+
+- **語音轉文字獨立成 `stt/`**，用途縮限為「音檔轉文字驗證」。有自己的
+  `requirements.txt` 與 `docker/dockerfile.stt`；BERT 的 image 不含 faster-whisper，
+  STT 的 image 不含 transformers。兩邊沒有任何 import 關係，日後要拆成獨立 repo
+  整個資料夾搬走即可。
+- **前處理獨立成 `imood_emotion/preprocess.py`**，成為流程上自己的一站。
+  原本文字層過濾與簡繁轉換都埋在語音辨識模組裡，等於前處理是它的附屬品；
+  但語音辨識是可替換模組，換掉它不該連前處理一起換掉。模擬串流這條路徑現在
+  也真的走完「前處理 → 推論 → 封包」。
+  - 簡繁轉換只對語音辨識來源開啟。`s2twp` 會改動台灣慣用詞，而樣本資料集本來
+    就是繁體，對它做轉換有機會改到模型輸入，讓數字與已發布的 baseline 不可比。
+  - 前處理耗時記在獨立的 `preprocess_ms`，**不併入** `latency_ms` —— 後者的定義
+    維持 tokenize/forward/post 三段，動它就會讓新舊 baseline 不能比。
+- **`imood_stream/` → `imood_emotion/`**。「stream」只描述其中一種輸入模式，
+  名字與內容早就對不上了。
+- **`scripts/` 拆成兩個資料夾**：`scripts/` 只留啟動與設定（`run_baseline.py`、
+  `prepare_samples.py`），驗證與分析移到 `checks/`（`verify_labels.py`、
+  `summarize.py`、`stress_fragments.py`）。`run_stream.py` 隨之更名為
+  `scripts/run_baseline.py`。
+- **評測骨架 `_sandbox/` → `eval/` 並進版控**。原本整包被 gitignore，協作者看不到
+  評測邏輯；現在 `configs/` `evalkit/` `scripts/` 正常進版控，只有 `eval/data/`
+  與 `eval/results/` 排除 —— 兩者都含資料集原文（後者的 `predictions.jsonl`
+  是逐句明細）。
+- **docker 檔案集中到 `docker/`**（`dockerfile`／`dockerfile.stt`／
+  `docker-compose.yml`）。指令改成 `docker compose -f docker/docker-compose.yml …`。
+  - `.dockerignore` 刻意留在專案根目錄：Docker 找的是 build context 根目錄底下的
+    那一份，搬進 `docker/` 會靜默失效。
+
+### 修正
+
+- **function 內 import 全數提到檔案最上層**，共 11 處（`imood_emotion/recorder.py`、
+  `scripts/prepare_samples.py`、`checks/verify_labels.py`，以及 `eval/` 底下的
+  `evalkit/preprocess.py`、`evalkit/runner.py`、`evalkit/adapters/base.py`、
+  `run_eval.py`）。
+  - `evalkit/adapters/base.py` 原本在 `get_adapter()` 裡 import 轉接器來觸發註冊，
+    改到 `evalkit/adapters/__init__.py` 的模組層做。新增轉接器時要記得在那裡補一行。
+- `REFS_DIR` 未設定時，compose 改掛 repo 內的空資料夾 `docker/empty/`，
+  而不是專案外一個不存在的路徑 —— 後者會讓 Docker 靜默造一個空目錄，不報錯但行為很怪。
+
+---
+
 ## 2026-08-07 — 接上真實麥克風輸入
 
 模擬上游換成麥克風即時收音：錄音 → faster-whisper 轉文字 → 既有的分類邏輯。`classifier.py` 的核心未更動。

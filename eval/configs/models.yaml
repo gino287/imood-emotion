@@ -1,0 +1,139 @@
+# 候選模型設定檔 —— 評測骨架的唯一入口
+#
+# 設計原則（規劃書 v2 §5.2）：新增一個候選模型，正常情況下只需要在 models: 底下
+# 加一段設定，不動任何一行主程式。只有推論介面不是標準 HuggingFace
+# AutoModelForSequenceClassification 的（例如 ModelScope 托管的模型），才需要
+# 在 evalkit/adapters/ 新增一支轉接器。
+#
+# ⚠️ 映射表（mappings）不參與推論。骨架跑完只存原生輸出與完整機率向量，
+#    映射是報告階段的後處理 —— 改映射不必重跑模型，直接重跑 report 即可。
+
+# ---------------------------------------------------------------------------
+# 六類標籤定義（沿用 SMP2020-EWECT 通用微博資料集原生六類，不做修改）
+# ---------------------------------------------------------------------------
+labels: [happy, angry, sad, fear, surprise, neutral]
+
+label_zh:
+  happy: 積極
+  angry: 憤怒
+  sad: 悲傷
+  fear: 恐懼
+  surprise: 驚奇
+  neutral: 無情緒
+
+# ---------------------------------------------------------------------------
+# 測試集
+# ---------------------------------------------------------------------------
+dataset:
+  # SMP2020 原始資料的位置。這份資料有自身授權條款，不隨 repo 散布，放在專案外層，
+  # 由 .env 的 REFS_DIR 指路、compose 唯讀掛到容器的 /refs（見 .env.example）。
+  # 列出候選路徑、程式挑第一個存在的，所以容器內跑跟主機直接跑都不用改設定。
+  # ⚠️ 一律用 data/raw/：clean 版把 [惊恐] 改成了《惊恐》，毀掉方括號表情這個情緒訊號。
+  source_candidates:
+    - /refs/BERT_SMP2020-EWECT/data/raw/usual_test_labeled.txt
+    - ../refs/BERT_SMP2020-EWECT/data/raw/usual_test_labeled.txt
+
+  path: data/testset/dataset_v1.jsonl
+  meta: data/testset/dataset_v1.meta.json
+
+  seed: 20260731        # 固定 seed：資料集不進版控，但任何人重跑都能得到同一份
+  per_class: 200        # 每類 200 句共 1200 句。官方 test 集 fear 只有 210 句，
+                        # 這是硬上限；200 句時 per-class 指標的 95% 信賴區間約 ±6%
+
+  # runner 啟動時核對這個 hash，不符就直接失敗。
+  # 避免跑到第三個模型時，沒人記得住第一個模型是不是跑同一份資料。
+  # 由 scripts/build_testset.py 產生後填入（首次建立前留 null 代表略過檢查）。
+  expect_sha256: d7d7470d40ad894166c6741c4ef80a2d2ad2edaedd4391e435d3ce3c51babbbe
+
+# ---------------------------------------------------------------------------
+# 執行參數
+# ---------------------------------------------------------------------------
+runtime:
+  devices: [cuda, cpu]          # 兩個都要跑：部署硬體未定，且 3050 4GB 要與
+                                # Moshi/JoyGen 共卡，CPU 路線必須有數字備著
+  text_variants: [zh_cn, zh_tw] # 繁簡 A/B。zh_cn=清洗後簡體，zh_tw=OpenCC s2twp
+  warmup: 20                    # 前 20 句只跑不計時（CUDA kernel autotune 會讓
+                                # 前幾句慢好幾倍，不丟掉會汙染 mean 與 p95）
+  max_length: 160               # 實測字數 p99=139；實作時再以 tokenizer 實際
+                                # token 數複驗，並記錄 truncation 率
+  torch_num_threads: 4          # 固定住，否則 CPU 延遲數字每次都不一樣
+  batch_sizes_for_throughput: [8, 32]   # 吞吐量參考值。⚠️ 非產品場景數字，
+                                        # 產品是單句即時，主數字一律看 batch=1
+
+# ---------------------------------------------------------------------------
+# 候選模型
+# ---------------------------------------------------------------------------
+models:
+  - key: johnson-small
+    hf_id: Johnson8187/Chinese-Emotion-Small
+    adapter: hf_seqcls
+    note: 現有 baseline 的輕量版，用來跟同系列 large 版比「省了多少速度、賠了多少準確率」
+
+    # 對照用的斷言：載入後比對模型 config 的 id2label，不一致就大聲失敗。
+    # 標籤順序對不上是分類任務最典型的靜默錯誤 —— 分數會低得莫名其妙，
+    # 但不會有任何錯誤訊息。
+    #
+    # ⚠️ 這個模型的 config.json 只有 LABEL_0..LABEL_7 佔位符，沒有真實標籤名，
+    #    所以順序**無法從模型本身驗證**，只驗得到「8 類」這件事。
+    #    下面的順序抄自 model card 的 label_mapping（2026-07-31 查核）。
+    #    若哪天分數低得莫名其妙，第一個要懷疑的就是這個順序。
+    native_labels: [平淡語氣, 關切語調, 開心語調, 憤怒語調, 悲傷語調, 疑問語調, 驚奇語調, 厭惡語調]
+    native_labels_source: https://huggingface.co/Johnson8187/Chinese-Emotion-Small （model card 的 label_mapping）
+
+    # 這個模型結構上表達得出哪些六類標籤。
+    # 八個原生類別裡沒有任何一個對應恐懼，所以 fear 不在此列。
+    # subset 視角的指標據此計算 —— 沒有這欄，拿「無原生 fear 的模型」跟
+    # 「有 fear 的模型」比 Macro-F1 並不公平。
+    covers: [happy, angry, sad, surprise, neutral]
+
+    # 三組映射並列評測。成本為零（同一份 predictions 重算而已），
+    # 報告會直接輸出三欄對照，讓「厭惡語調到底該映到哪」用數字結案。
+    mappings:
+      draft:          # 規劃書 v1 的草案：硬把厭惡塞給 fear
+        平淡語氣: neutral
+        關切語調: neutral
+        開心語調: happy
+        憤怒語調: angry
+        悲傷語調: sad
+        疑問語調: surprise
+        驚奇語調: surprise
+        厭惡語調: fear          # ⚠️ 厭惡(disgust) ≠ 恐懼(fear)，權宜作法非語意對齊
+
+      abstain:        # 承認模型答不出 fear，該類棄權
+        平淡語氣: neutral
+        關切語調: neutral
+        開心語調: happy
+        憤怒語調: angry
+        悲傷語調: sad
+        疑問語調: surprise
+        驚奇語調: surprise
+        厭惡語調: null          # null = 棄權，strict 視角算錯、covered 視角排除
+
+      to_angry:       # 厭惡與憤怒同屬負向高喚醒，語意距離比 fear 近
+        平淡語氣: neutral
+        關切語調: neutral
+        開心語調: happy
+        憤怒語調: angry
+        悲傷語調: sad
+        疑問語調: surprise
+        驚奇語調: surprise
+        厭惡語調: angry
+
+    # 哪一組是報告主表用的預設值。等 mapping-free 指標出來後再回頭改這裡。
+    default_mapping: draft
+
+  # -------------------------------------------------------------------------
+  # 以下為已知後續會加入的候選，等第一個模型跑通後再逐一啟用。
+  # 取消註解 + 補上 native_labels/covers/mappings 即可，不需改程式。
+  # -------------------------------------------------------------------------
+  # - key: johnson-large
+  #   hf_id: Johnson8187/Chinese-Emotion
+  #   adapter: hf_seqcls
+  #   note: 同系列 large 版（XLM-RoBERTa large, ~355M）。原生八類與 Small 版相同，
+  #         映射表可直接沿用；重點在比較速度與 VRAM 的代價
+  #
+  # - key: structbert-iic
+  #   hf_id: iic/nlp_structbert_emotion-classification_chinese-base
+  #   adapter: modelscope        # ⚠️ 托管在 ModelScope 不是 HuggingFace，
+  #                              #    需在 evalkit/adapters/ 新增一支轉接器
+  #   note: 簡體訓練的模型，繁簡 A/B 的對照組意義最大

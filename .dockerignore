@@ -1,10 +1,14 @@
-# dockerfile 是 COPY . .，沒有這份檔案的話下面這些東西會被打包進 image。
-# 開發時一律用 -v 掛載當前資料夾，這些內容容器仍然看得到，不影響執行。
+# ⚠️ 這個檔案必須留在專案根目錄，不能跟著 dockerfile 一起搬進 docker/。
+#    Docker 找的是「build context 根目錄」底下的 .dockerignore，而 context 是專案根目錄。
+#    搬走它不會報錯，只會靜默失效，然後 image 突然大一整個 .cache/。
+#
+# 兩個 image（docker/dockerfile 與 docker/dockerfile.stt）共用這份規則。
+# dockerfile 是 COPY . .，沒有這份檔案的話下面這些東西會被打包進去。
+# 開發時一律用 -v 掛載專案資料夾，被排除的內容容器仍然看得到，不影響執行。
 
-# 本地工作檔與另一套評測框架：不進 image。
-# compose 的 -v .:/app 仍會掛進容器，需要時照樣跑得到。
-_sandbox/
-_notes/
+# 本地筆記與跨模型評測框架：不進 image。
+notes/
+eval/
 _local/
 CLAUDE.md
 
@@ -12,11 +16,8 @@ CLAUDE.md
 data/
 results/
 
-# HF 模型快取：Johnson8187 large 版約 1.4GB，進 image 等於每次 build 都搬一次
+# HF 模型快取：單一模型可達 1.4GB，進 image 等於每次 build 都搬一次
 .cache/
-
-# 本機虛擬環境（Linux 容器用不到 Windows 裝的套件）
-.venv/
 
 # 版控與工具設定
 .git/
@@ -28,6 +29,6 @@ __pycache__/
 # 文件：改 README 不該觸發 image 重建
 *.md
 
-# 金鑰：走 --env-file 帶進容器，不烘進 image 層
+# 金鑰：走 env_file 帶進容器，不烘進 image 層
 .env
 .secrets/
