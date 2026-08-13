@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-08-12T17:06:10+0000",
+  "python": "3.12.3",
+  "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+  "torch": "2.13.0+cu126",
+  "cuda_available": true,
+  "gpu": "NVIDIA GeForce RTX 3050 Laptop GPU",
+  "gpu_static": {
+    "name": "NVIDIA GeForce RTX 3050 Laptop GPU",
+    "driver": "610.62",
+    "max_sm_mhz": 2100,
+    "power_limit_w": "unsupported: NVMLError_NotSupported",
+    "persistence_mode": 1
+  },
+  "mode": "decay",
+  "device": "cuda"
+}

@@ -1,0 +1,16 @@
+ Container imood-emotion-app-run-d6dc0f1b4028 Creating 
+ Container imood-emotion-app-run-d6dc0f1b4028 Created 
+載入模型（device=cuda）…
+Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights:  53%|█████▎    | 107/202 [00:00<00:00, 1068.99it/s]Loading weights: 100%|██████████| 202/202 [00:00<00:00, 1319.23it/s]
+  ⚠️ 模型 config 只有 LABEL_0..7 佔位符，標籤順序無法從模型驗證，只驗到類別數 8 相符
+     順序出處：https://huggingface.co/Johnson8187/Chinese-Emotion-Small （model card 的 label_mapping）
+熱身 30 句…
+開始掃描 12 種間隔 × 25 句
+  gap=0.0s：先閒置 9.0s 讓時脈落底… 起始 SM=210MHz，開始量測
+    → 476 句，結束 SM=712MHz
+  gap=0.05s：先閒置 9.0s 讓時脈落底… 起始 SM=210MHz，開始量測
+    → 214 句，結束 SM=960MHz
+  gap=0.1s：先閒置 9.0s 讓時脈落底… 起始 SM=210MHz，開始量測
+    → 138 句，結束 SM=525MHz
+  gap=0.2s：先閒置 9.0s 讓時脈落底… 起始 SM=210MHz，開始量測
+

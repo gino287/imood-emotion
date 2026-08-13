@@ -1,0 +1,219 @@
+{
+  "timestamp": "2026-08-12T17:26:44+0000",
+  "python": "3.12.3",
+  "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+  "torch": "2.13.0+cu126",
+  "cuda_available": true,
+  "gpu": "NVIDIA GeForce RTX 3050 Laptop GPU",
+  "gap_sec": 1.5,
+  "n_per_condition": 25,
+  "gpu_static": {
+    "name": "NVIDIA GeForce RTX 3050 Laptop GPU",
+    "driver": "610.62",
+    "max_sm_mhz": 2100,
+    "power_limit_w": "unsupported: NVMLError_NotSupported",
+    "persistence_mode": 1
+  },
+  "summary": {
+    "none": {
+      "latency": {
+        "n": 25,
+        "mean": 114.971,
+        "p50": 128.137,
+        "p90": 139.903,
+        "p95": 140.176,
+        "p99": 141.421,
+        "min": 60.305,
+        "max": 141.794,
+        "stdev": 30.972
+      },
+      "sm_before_p50": 285.0,
+      "power_before_p50": 13.94,
+      "temp_p50": 58.0,
+      "heartbeats": 0,
+      "throttle_at_end": [
+        "GpuIdle"
+      ]
+    },
+    "matmul_256_@500ms": {
+      "latency": {
+        "n": 25,
+        "mean": 116.897,
+        "p50": 128.899,
+        "p90": 138.52,
+        "p95": 139.328,
+        "p99": 140.793,
+        "min": 56.466,
+        "max": 141.214,
+        "stdev": 30.108
+      },
+      "sm_before_p50": 277.0,
+      "power_before_p50": 13.29,
+      "temp_p50": 57.0,
+      "heartbeats": 86,
+      "throttle_at_end": [
+        "GpuIdle"
+      ]
+    },
+    "matmul_256_@250ms": {
+      "latency": {
+        "n": 25,
+        "mean": 116.89,
+        "p50": 125.167,
+        "p90": 139.088,
+        "p95": 139.552,
+        "p99": 140.199,
+        "min": 58.044,
+        "max": 140.398,
+        "stdev": 29.165
+      },
+      "sm_before_p50": 330.0,
+      "power_before_p50": 13.31,
+      "temp_p50": 57.0,
+      "heartbeats": 170,
+      "throttle_at_end": [
+        "GpuIdle"
+      ]
+    },
+    "matmul_256_@100ms": {
+      "latency": {
+        "n": 25,
+        "mean": 115.541,
+        "p50": 125.041,
+        "p90": 138.442,
+        "p95": 139.547,
+        "p99": 139.756,
+        "min": 57.3,
+        "max": 139.775,
+        "stdev": 29.565
+      },
+      "sm_before_p50": 360.0,
+      "power_before_p50": 13.34,
+      "temp_p50": 56.0,
+      "heartbeats": 424,
+      "throttle_at_end": [
+        "GpuIdle"
+      ]
+    },
+    "matmul_256_@50ms": {
+      "latency": {
+        "n": 25,
+        "mean": 113.818,
+        "p50": 127.149,
+        "p90": 138.728,
+        "p95": 139.198,
+        "p99": 139.393,
+        "min": 57.811,
+        "max": 139.422,
+        "stdev": 31.154
+      },
+      "sm_before_p50": 360.0,
+      "power_before_p50": 13.45,
+      "temp_p50": 56.0,
+      "heartbeats": 844,
+      "throttle_at_end": [
+        "GpuIdle"
+      ]
+    },
+    "matmul_1024_@100ms": {
+      "latency": {
+        "n": 25,
+        "mean": 113.637,
+        "p50": 127.161,
+        "p90": 142.625,
+        "p95": 143.224,
+        "p99": 146.546,
+        "min": 58.144,
+        "max": 147.585,
+        "stdev": 34.095
+      },
+      "sm_before_p50": 360.0,
+      "power_before_p50": 13.63,
+      "temp_p50": 56.0,
+      "heartbeats": 424,
+      "throttle_at_end": [
+        "GpuIdle"
+      ]
+    },
+    "model_fwd_@500ms": {
+      "latency": {
+        "n": 25,
+        "mean": 72.369,
+        "p50": 60.638,
+        "p90": 114.458,
+        "p95": 119.748,
+        "p99": 123.42,
+        "min": 18.334,
+        "max": 124.338,
+        "stdev": 26.125
+      },
+      "sm_before_p50": 525.0,
+      "power_before_p50": 15.25,
+      "temp_p50": 57.0,
+      "heartbeats": 83,
+      "throttle_at_end": [
+        "GpuIdle"
+      ]
+    },
+    "model_fwd_@250ms": {
+      "latency": {
+        "n": 25,
+        "mean": 65.609,
+        "p50": 59.469,
+        "p90": 90.406,
+        "p95": 94.853,
+        "p99": 101.172,
+        "min": 21.23,
+        "max": 102.89,
+        "stdev": 17.913
+      },
+      "sm_before_p50": 570.0,
+      "power_before_p50": 16.04,
+      "temp_p50": 58.0,
+      "heartbeats": 165,
+      "throttle_at_end": [
+        "GpuIdle"
+      ]
+    },
+    "model_fwd_@100ms": {
+      "latency": {
+        "n": 25,
+        "mean": 49.218,
+        "p50": 46.307,
+        "p90": 77.633,
+        "p95": 86.655,
+        "p99": 89.351,
+        "min": 21.687,
+        "max": 90.187,
+        "stdev": 18.257
+      },
+      "sm_before_p50": 510.0,
+      "power_before_p50": 19.23,
+      "temp_p50": 61.0,
+      "heartbeats": 407,
+      "throttle_at_end": [
+        "GpuIdle"
+      ]
+    },
+    "load_1024x8_@50ms": {
+      "latency": {
+        "n": 25,
+        "mean": 59.991,
+        "p50": 68.472,
+        "p90": 83.322,
+        "p95": 83.498,
+        "p99": 84.997,
+        "min": 19.38,
+        "max": 85.47,
+        "stdev": 23.247
+      },
+      "sm_before_p50": 667.0,
+      "power_before_p50": 18.56,
+      "temp_p50": 62.0,
+      "heartbeats": 816,
+      "throttle_at_end": [
+        "GpuIdle"
+      ]
+    }
+  }
+}

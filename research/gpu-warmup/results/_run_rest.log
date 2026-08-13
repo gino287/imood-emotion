@@ -1,0 +1,72 @@
+ Container imood-emotion-app-run-f3890ee83a9b Creating 
+ Container imood-emotion-app-run-f3890ee83a9b Created 
++ python research/gpu-warmup/experiments/exp4_fp16_parity.py
+fp32 跑 200 句…
+Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights:  48%|████▊     | 96/202 [00:00<00:00, 959.48it/s]Loading weights: 100%|██████████| 202/202 [00:00<00:00, 1160.82it/s]
+fp16 跑 200 句…
+Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights:   2%|▏         | 5/202 [00:02<01:21,  2.40it/s]Loading weights: 100%|██████████| 202/202 [00:02<00:00, 96.87it/s]
+
+標籤一致率      1.0000（0/200 句不一致）
+信心平均絕對差  0.001391  最大 0.020817
+機率向量最大差  平均 0.001451  最大 0.020897
+準確率          fp32 0.85  fp16 0.85
+
+寫出 /app/research/gpu-warmup/results/exp4_fp16_parity.json
++ python research/gpu-warmup/experiments/exp3_reduce_cost.py --n 25 --only tf32 eager --tag tf32
+→ tf32：載入 + 暖機（compile 的第一次很慢，屬正常）… Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights:  70%|███████   | 142/202 [00:00<00:00, 1412.17it/s]Loading weights: 100%|██████████| 202/202 [00:00<00:00, 1627.09it/s]
+1.2s，VRAM 1072.9MB
+   連續 p50=22.514ms   間歇 p50=118.714ms p95=128.303ms
+→ eager：載入 + 暖機（compile 的第一次很慢，屬正常）… Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights:  68%|██████▊   | 137/202 [00:00<00:00, 1345.14it/s]Loading weights: 100%|██████████| 202/202 [00:00<00:00, 1545.43it/s]
+1.0s，VRAM 1073.5MB
+   連續 p50=16.931ms   間歇 p50=126.778ms p95=139.9ms
+
+變體                       連續p50     間歇p50     間歇p95      暖機秒
+tf32                    22.514   118.714   128.303      1.2
+eager                   16.931   126.778     139.9      1.0
++ python research/gpu-warmup/experiments/exp1_gap_sweep.py --mode sweep --device cpu --n-per-gap 25
+載入模型（device=cpu）…
+Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights:  65%|██████▍   | 131/202 [00:00<00:00, 1303.59it/s]Loading weights: 100%|██████████| 202/202 [00:00<00:00, 1653.54it/s]
+  ⚠️ 模型 config 只有 LABEL_0..7 佔位符，標籤順序無法從模型驗證，只驗到類別數 8 相符
+     順序出處：https://huggingface.co/Johnson8187/Chinese-Emotion-Small （model card 的 label_mapping）
+熱身 30 句…
+開始掃描 12 種間隔 × 25 句
+  gap=0.0s：先閒置 9.0s 讓時脈落底… 起始 SM=-1MHz，開始量測
+    → 308 句，結束 SM=-1MHz -1W -1°C throttle=[]
+  gap=0.05s：先閒置 9.0s 讓時脈落底… 起始 SM=-1MHz，開始量測
+    → 201 句，結束 SM=-1MHz -1W -1°C throttle=[]
+  gap=0.1s：先閒置 9.0s 讓時脈落底… 起始 SM=-1MHz，開始量測
+    → 147 句，結束 SM=-1MHz -1W -1°C throttle=[]
+  gap=0.2s：先閒置 9.0s 讓時脈落底… 起始 SM=-1MHz，開始量測
+    → 103 句，結束 SM=-1MHz -1W -1°C throttle=[]
+  gap=0.35s：先閒置 9.0s 讓時脈落底… 起始 SM=-1MHz，開始量測
+    → 69 句，結束 SM=-1MHz -1W -1°C throttle=[]
+  gap=0.5s：先閒置 9.0s 讓時脈落底… 起始 SM=-1MHz，開始量測
+    → 52 句，結束 SM=-1MHz -1W -1°C throttle=[]
+  gap=0.75s：先閒置 9.0s 讓時脈落底… 起始 SM=-1MHz，開始量測
+    → 36 句，結束 SM=-1MHz -1W -1°C throttle=[]
+  gap=1.0s：先閒置 9.0s 讓時脈落底… 起始 SM=-1MHz，開始量測
+    → 28 句，結束 SM=-1MHz -1W -1°C throttle=[]
+  gap=1.5s：先閒置 9.0s 讓時脈落底… 起始 SM=-1MHz，開始量測
+    → 25 句，結束 SM=-1MHz -1W -1°C throttle=[]
+  gap=2.0s：先閒置 9.0s 讓時脈落底… 起始 SM=-1MHz，開始量測
+    → 25 句，結束 SM=-1MHz -1W -1°C throttle=[]
+  gap=3.0s：先閒置 9.0s 讓時脈落底… 起始 SM=-1MHz，開始量測
+    → 25 句，結束 SM=-1MHz -1W -1°C throttle=[]
+  gap=5.0s：先閒置 9.0s 讓時脈落底… 起始 SM=-1MHz，開始量測
+    → 25 句，結束 SM=-1MHz -1W -1°C throttle=[]
+
+寫出 research/gpu-warmup/results/exp1_sweep_cpu.jsonl（1044 筆）
+
+     間隔    n    p50(穩態)    p95(穩態)    p50(全)   SM MHz     功耗W    溫度
+    0.0  308     98.258    108.312    97.673     -1.0    -1.0  -1.0
+   0.05  201    100.217    115.291    99.027     -1.0    -1.0  -1.0
+    0.1  147    106.576    122.135   103.796     -1.0    -1.0  -1.0
+    0.2  103     92.681    110.806    92.829     -1.0    -1.0  -1.0
+   0.35   69     89.314     99.291    90.712     -1.0    -1.0  -1.0
+    0.5   52     86.078    100.108    90.373     -1.0    -1.0  -1.0
+   0.75   36     88.657     98.115    89.055     -1.0    -1.0  -1.0
+    1.0   28     90.191     96.315    89.007     -1.0    -1.0  -1.0
+    1.5   25     91.522     100.58    89.801     -1.0    -1.0  -1.0
+    2.0   25     90.927     99.285    87.731     -1.0    -1.0  -1.0
+    3.0   25     88.043    104.108    89.732     -1.0    -1.0  -1.0
+    5.0   25      92.52    104.819     91.18     -1.0    -1.0  -1.0

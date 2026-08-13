@@ -1,0 +1,36 @@
+ Container imood-emotion-app-run-fe05ae8d8be5 Creating 
+ Container imood-emotion-app-run-fe05ae8d8be5 Created 
+載入模型（device=cuda）…
+Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights:  65%|██████▌   | 132/202 [00:00<00:00, 1318.08it/s]Loading weights: 100%|██████████| 202/202 [00:00<00:00, 1521.84it/s]
+  ⚠️ 模型 config 只有 LABEL_0..7 佔位符，標籤順序無法從模型驗證，只驗到類別數 8 相符
+     順序出處：https://huggingface.co/Johnson8187/Chinese-Emotion-Small （model card 的 label_mapping）
+熱身 30 句…
+開始掃描 12 種間隔 × 30 句
+  gap=  0.0s done
+  gap=  0.1s done
+  gap= 0.35s done
+  gap= 0.75s done
+  gap=  1.5s done
+  gap=  3.0s done
+  gap= 0.05s done
+  gap=  0.2s done
+  gap=  0.5s done
+  gap=  1.0s done
+  gap=  2.0s done
+  gap=  5.0s done
+
+寫出 research/gpu-warmup/results/exp1_sweep_cuda.jsonl（360 筆）
+
+      間隔     p50延遲     p95延遲      推論前SM      推論後SM   GpuIdle旗標
+     0.0    17.762    45.789     1935.0     1935.0        0.0%
+    0.05    54.748    86.352      615.0      615.0      100.0%
+     0.1    19.567    37.917     1500.0     1500.0       60.0%
+     0.2    58.364   120.391      525.0      525.0      100.0%
+    0.35    61.388   126.615      435.0      435.0      100.0%
+     0.5    60.861   129.498      472.0      472.0      100.0%
+    0.75    120.65   133.522      390.0      390.0      100.0%
+     1.0   129.165   136.489      303.5      270.0      100.0%
+     1.5   124.144   138.526      307.0      307.0      100.0%
+     2.0    136.99   139.351      337.0      247.0      100.0%
+     3.0   137.733   140.745      210.0      210.0      100.0%
+     5.0   137.103   139.553      210.0      210.0      100.0%

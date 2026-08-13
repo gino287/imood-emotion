@@ -1,0 +1,42 @@
+ Container imood-emotion-app-run-2de3cec31250 Creating 
+ Container imood-emotion-app-run-2de3cec31250 Created 
++ python research/gpu-warmup/experiments/exp2_keepalive.py --gap 1.5 --n 25
+載入模型…
+Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights:  71%|███████   | 143/202 [00:00<00:00, 1418.02it/s]Loading weights: 100%|██████████| 202/202 [00:00<00:00, 1706.37it/s]
+  ⚠️ 模型 config 只有 LABEL_0..7 佔位符，標籤順序無法從模型驗證，只驗到類別數 8 相符
+     順序出處：https://huggingface.co/Johnson8187/Chinese-Emotion-Small （model card 的 label_mapping）
+→ none … p50=128.137ms SM=285.0MHz 13.94W
+→ matmul_256_@500ms … p50=128.899ms SM=277.0MHz 13.29W
+→ matmul_256_@250ms … p50=125.167ms SM=330.0MHz 13.31W
+→ matmul_256_@100ms … p50=125.041ms SM=360.0MHz 13.34W
+→ matmul_256_@50ms … p50=127.149ms SM=360.0MHz 13.45W
+→ matmul_1024_@100ms … p50=127.161ms SM=360.0MHz 13.63W
+→ model_fwd_@500ms … p50=60.638ms SM=525.0MHz 15.25W
+→ model_fwd_@250ms … p50=59.469ms SM=570.0MHz 16.04W
+→ model_fwd_@100ms … p50=46.307ms SM=510.0MHz 19.23W
+→ load_1024x8_@50ms … p50=68.472ms SM=667.0MHz 18.56W
+
+條件                         p50     p95   SM MHz     功耗W     心跳次數
+none                   128.137 140.176    285.0   13.94        0
+matmul_256_@500ms      128.899 139.328    277.0   13.29       86
+matmul_256_@250ms      125.167 139.552    330.0   13.31      170
+matmul_256_@100ms      125.041 139.547    360.0   13.34      424
+matmul_256_@50ms       127.149 139.198    360.0   13.45      844
+matmul_1024_@100ms     127.161 143.224    360.0   13.63      424
+model_fwd_@500ms        60.638 119.748    525.0   15.25       83
+model_fwd_@250ms        59.469  94.853    570.0   16.04      165
+model_fwd_@100ms        46.307  86.655    510.0   19.23      407
+load_1024x8_@50ms       68.472  83.498    667.0   18.56      816
+
+寫出 research/gpu-warmup/results/exp2_keepalive_gap1.5.jsonl
++ python research/gpu-warmup/experiments/exp3_reduce_cost.py --n 25
+建立各變體（compile 的第一次會很慢，屬正常）…
+Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights:  67%|██████▋   | 136/202 [00:00<00:00, 1352.96it/s]Loading weights: 100%|██████████| 202/202 [00:00<00:00, 1596.41it/s]
+Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights:   2%|▏         | 5/202 [00:02<01:24,  2.32it/s]Loading weights: 100%|██████████| 202/202 [00:02<00:00, 93.46it/s]
+Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights:  50%|█████     | 101/202 [00:00<00:00, 1008.42it/s]Loading weights: 100%|██████████| 202/202 [00:00<00:00, 1216.86it/s]
+Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights:  51%|█████     | 103/202 [00:00<00:00, 1019.85it/s]Loading weights: 100%|██████████| 202/202 [00:00<00:00, 1271.70it/s]
+Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights:   2%|▏         | 5/202 [00:02<01:38,  2.00it/s]Loading weights: 100%|██████████| 202/202 [00:02<00:00, 80.74it/s]
+→ eager：暖機（含編譯）… 4.3s
+   連續 p50=91.753ms   間歇 p50=95.53ms p95=186.429ms
+→ eager_padded：暖機（含編譯）… 3.7s
+

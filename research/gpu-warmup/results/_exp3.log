@@ -1,0 +1,32 @@
+ Container imood-emotion-app-run-11b9612da105 Creating 
+ Container imood-emotion-app-run-11b9612da105 Created 
++ python research/gpu-warmup/experiments/exp3_reduce_cost.py --n 25
+→ eager：載入 + 暖機（compile 的第一次很慢，屬正常）… Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights:  52%|█████▏    | 105/202 [00:00<00:00, 1048.33it/s]Loading weights: 100%|██████████| 202/202 [00:00<00:00, 1205.57it/s]
+1.2s，VRAM 1072.9MB
+   連續 p50=15.967ms   間歇 p50=126.511ms p95=139.105ms
+→ eager_padded：載入 + 暖機（compile 的第一次很慢，屬正常）… Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights:  68%|██████▊   | 138/202 [00:00<00:00, 1373.82it/s]Loading weights: 100%|██████████| 202/202 [00:00<00:00, 1544.28it/s]
+0.9s，VRAM 1073.5MB
+   連續 p50=17.016ms   間歇 p50=140.369ms p95=151.961ms
+→ fp16：載入 + 暖機（compile 的第一次很慢，屬正常）… Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights:   2%|▏         | 5/202 [00:02<01:22,  2.38it/s]Loading weights: 100%|██████████| 202/202 [00:02<00:00, 95.97it/s]
+1.1s，VRAM 547.0MB
+   連續 p50=16.224ms   間歇 p50=61.907ms p95=63.577ms
+→ compile_default：載入 + 暖機（compile 的第一次很慢，屬正常）… Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights:  63%|██████▎   | 127/202 [00:00<00:00, 1261.59it/s]Loading weights: 100%|██████████| 202/202 [00:00<00:00, 1469.36it/s]
+/usr/local/lib/python3.12/dist-packages/torch/_inductor/compile_fx.py:321: UserWarning: TensorFloat32 tensor cores for float32 matrix multiplication available but not enabled. Consider setting `torch.set_float32_matmul_precision('high')` for better performance.
+  warnings.warn(
+W0812 17:33:24.652000 8 torch/_inductor/utils.py:1953] [0/0] Not enough SMs to use max_autotune_gemm mode
+17.6s，VRAM 1073.5MB
+   連續 p50=11.962ms   間歇 p50=137.486ms p95=146.055ms
+→ compile_reduce_ov：載入 + 暖機（compile 的第一次很慢，屬正常）… Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights:  55%|█████▍    | 111/202 [00:00<00:00, 1097.18it/s]Loading weights: 100%|██████████| 202/202 [00:00<00:00, 1399.70it/s]
+14.4s，VRAM 1065.4MB
+   連續 p50=11.936ms   間歇 p50=136.235ms p95=142.756ms
+→ compile_ro_fp16：載入 + 暖機（compile 的第一次很慢，屬正常）… Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights:   2%|▏         | 5/202 [00:02<01:31,  2.15it/s]Loading weights: 100%|██████████| 202/202 [00:02<00:00, 86.35it/s]
+15.5s，VRAM 539.1MB
+   連續 p50=4.688ms   間歇 p50=52.362ms p95=53.55ms
+
+變體                       連續p50     間歇p50     間歇p95      暖機秒
+eager                   15.967   126.511   139.105      1.2
+eager_padded            17.016   140.369   151.961      0.9
+fp16                    16.224    61.907    63.577      1.1
+compile_default         11.962   137.486   146.055     17.6
+compile_reduce_ov       11.936   136.235   142.756     14.4
+compile_ro_fp16          4.688    52.362     53.55     15.5

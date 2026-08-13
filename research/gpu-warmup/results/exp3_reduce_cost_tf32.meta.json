@@ -1,0 +1,79 @@
+{
+  "timestamp": "2026-08-12T17:41:06+0000",
+  "python": "3.12.3",
+  "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+  "torch": "2.13.0+cu126",
+  "cuda_available": true,
+  "gpu": "NVIDIA GeForce RTX 3050 Laptop GPU",
+  "gap_sec": 1.5,
+  "n_intermittent": 25,
+  "n_continuous": 200,
+  "pad_len": 64,
+  "gpu_static": {
+    "name": "NVIDIA GeForce RTX 3050 Laptop GPU",
+    "driver": "610.62",
+    "max_sm_mhz": 2100,
+    "power_limit_w": "unsupported: NVMLError_NotSupported",
+    "persistence_mode": 1
+  },
+  "summary": {
+    "tf32": {
+      "dtype": "fp32",
+      "padded": false,
+      "warmup_seconds": 1.2,
+      "vram_allocated_mb": 1072.9,
+      "continuous": {
+        "n": 100,
+        "mean": 27.941,
+        "p50": 22.514,
+        "p90": 45.375,
+        "p95": 46.354,
+        "p99": 48.836,
+        "min": 14.577,
+        "max": 49.546,
+        "stdev": 12.78
+      },
+      "intermittent_1.5s": {
+        "n": 25,
+        "mean": 106.109,
+        "p50": 118.714,
+        "p90": 127.127,
+        "p95": 128.303,
+        "p99": 128.865,
+        "min": 52.6,
+        "max": 128.959,
+        "stdev": 28.997
+      },
+      "sm_intermittent_p50": 322.0
+    },
+    "eager": {
+      "dtype": "fp32",
+      "padded": false,
+      "warmup_seconds": 1.0,
+      "vram_allocated_mb": 1073.5,
+      "continuous": {
+        "n": 100,
+        "mean": 19.526,
+        "p50": 16.931,
+        "p90": 23.947,
+        "p95": 35.171,
+        "p99": 54.205,
+        "min": 14.536,
+        "max": 60.261,
+        "stdev": 8.435
+      },
+      "intermittent_1.5s": {
+        "n": 25,
+        "mean": 115.92,
+        "p50": 126.778,
+        "p90": 138.925,
+        "p95": 139.9,
+        "p99": 140.261,
+        "min": 56.05,
+        "max": 140.306,
+        "stdev": 30.471
+      },
+      "sm_intermittent_p50": 352.0
+    }
+  }
+}

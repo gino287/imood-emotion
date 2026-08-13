@@ -1,0 +1,23 @@
+ Container imood-emotion-app-run-4faf12e8faf1 Creating 
+ Container imood-emotion-app-run-4faf12e8faf1 Created 
+載入模型…
+Loading weights:   0%|          | 0/202 [00:00<?, ?it/s]Loading weights:  43%|████▎     | 87/202 [00:00<00:00, 866.64it/s]Loading weights: 100%|██████████| 202/202 [00:00<00:00, 1094.07it/s]
+  ⚠️ 模型 config 只有 LABEL_0..7 佔位符，標籤順序無法從模型驗證，只驗到類別數 8 相符
+     順序出處：https://huggingface.co/Johnson8187/Chinese-Emotion-Small （model card 的 label_mapping）
+模型已轉為 fp16
+→ none … p50=62.733ms SM=210.0MHz 13.575W
+→ model_fwd_@500ms … p50=59.815ms SM=210.0MHz 13.86W
+→ model_fwd_@250ms … p50=58.785ms SM=273.5MHz 14.395W
+→ model_fwd_@100ms … p50=39.795ms SM=483.5MHz 16.03W
+→ model_fwd_@50ms … p50=38.106ms SM=686.0MHz 18.565W
+→ load_1024x8_@50ms … p50=41.674ms SM=637.5MHz 18.54W
+
+條件                         p50     p95   SM MHz     功耗W     心跳次數
+none                    62.733  64.954    210.0  13.575        0
+model_fwd_@500ms        59.815    86.0    210.0   13.86       98
+model_fwd_@250ms        58.785  92.973    273.5  14.395      197
+model_fwd_@100ms        39.795  77.009    483.5   16.03      483
+model_fwd_@50ms         38.106  60.676    686.0  18.565      961
+load_1024x8_@50ms       41.674   45.88    637.5   18.54      960
+
+寫出 research/gpu-warmup/results/exp2_keepalive_gap1.5_fp16.jsonl
