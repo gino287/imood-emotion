@@ -1,32 +1,21 @@
 # imood-emotion — BERT 情緒分類的執行環境
-#
-# base image 不要換：這組 CUDA/cuDNN/PyTorch 版本是 2026-07-22 實測 GPU 直通成功的
-# 組合，也是 leader 提的「避開 VM 上 CUDA 版本過舊」問題的解法。
-#
-# ⚠️ 這個 image 刻意不裝 faster-whisper。語音轉文字是可替換的前置模組，
-#    有自己的 image（docker/dockerfile.stt）—— 只想要 BERT 的人不該被迫
-#    連帶抓一整套語音辨識依賴。
 FROM pytorch/pytorch:2.13.0-cuda12.6-cudnn9-runtime
+#  已測試過此版本組合能成功執行GPU
 
 WORKDIR /app
+#設定目錄
 
-# PYTHONUNBUFFERED：200 句跑好幾分鐘，沒有這行看不到即時進度
-# PYTHONIOENCODING：容器內 print 中文標籤（憤怒語調…）不亂碼
-# HF_HOME：模型快取集中到這個路徑，而它落在 compose 的 -v ..:/app 掛載範圍內，
-#          所以主機與容器共用同一份，模型只下載一次
 ENV PYTHONUNBUFFERED=1 \
     PYTHONIOENCODING=utf-8 \
     HF_HOME=/app/.cache/huggingface
+#設定環境變數:即時輸出、可以print中文、快取路徑
 
-# 先只 COPY requirements：只要它沒變，下面這層 pip install 就吃快取，
-# 改 .py 不會觸發重裝套件
 COPY requirements.txt .
 RUN pip install --no-cache-dir --break-system-packages -r requirements.txt
+#先裝requirements，未更動時為快取
 
-# 實際打包哪些檔案由專案根目錄的 .dockerignore 決定
-# （notes/、eval/、.cache/ 都排除，否則本地筆記與模型快取會被塞進 image）
 COPY . .
+#打包剩餘檔案
 
-# 開發時一律用 -v 掛載 + 在指令列覆蓋 CMD。這裡放一行環境自我檢查當安全預設值：
-# 直接 docker run 只會印版本，不會誤跑東西
 CMD ["python", "-c", "import torch, transformers; print(f'torch {torch.__version__} / cuda {torch.cuda.is_available()} / transformers {transformers.__version__}')"]
+#執行預設值為 環境自我檢查

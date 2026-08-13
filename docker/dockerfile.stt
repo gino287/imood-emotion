@@ -1,22 +1,21 @@
 # imood-emotion — 語音轉文字（前置模組）的執行環境
-#
-# 與 BERT 那個 image 分開的理由：容器單一職責。只想要 BERT 情緒分類的人，
-# 不該因為 repo 裡順便放了 STT，就被迫抓 faster-whisper 與它的 CUDA 後端。
-#
-# base image 沿用同一個：faster-whisper 的後端是 ctranslate2 不是 torch，
-# 走 CUDA 需要這個 image 提供的 cuBLAS 與 cuDNN 9。
 FROM pytorch/pytorch:2.13.0-cuda12.6-cudnn9-runtime
+#  已測試過此版本組合能成功執行GPU
 
 WORKDIR /app
+#設定目錄
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONIOENCODING=utf-8 \
     HF_HOME=/app/.cache/huggingface
-
-# 只裝 stt/ 自己的依賴，不碰 requirements.txt（那是 BERT 那邊的）
+#設定環境變數:即時輸出、可以print中文、快取路徑
+    
 COPY stt/requirements.txt .
 RUN pip install --no-cache-dir --break-system-packages -r requirements.txt
+#安裝SST依賴
 
 COPY . .
+#打包剩餘檔案
 
 CMD ["python", "-c", "import faster_whisper; print('faster-whisper ok')"]
+#預設為環境檢查
