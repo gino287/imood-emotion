@@ -1,3 +1,4 @@
+# 待GINO改寫
 """自我檢查：用手算得出答案的小例子驗證前處理、映射與指標。
 
   python scripts/selftest.py

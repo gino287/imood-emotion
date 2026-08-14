@@ -1,3 +1,4 @@
+# 待GINO改寫
 """評測骨架 CLI 入口。
 
   python run_eval.py --list

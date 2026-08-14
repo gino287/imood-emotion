@@ -14,7 +14,7 @@ CLAUDE.md
 
 # 執行產出：跑起來才有的東西，不該進 image
 data/
-results/
+baseline/results/
 
 # HF 模型快取：單一模型可達 1.4GB，進 image 等於每次 build 都搬一次
 .cache/

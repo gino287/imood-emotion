@@ -1,3 +1,4 @@
+# 待GINO改寫
 """標準 HuggingFace 序列分類轉接器，涵蓋多數候選模型。"""
 import re
 import time

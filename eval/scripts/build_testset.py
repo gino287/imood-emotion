@@ -1,3 +1,4 @@
+# 待GINO改寫
 """建立凍結測試集（規劃書 v2 §3.3–3.6）。
 
   python scripts/build_testset.py

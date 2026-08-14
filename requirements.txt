@@ -1,4 +1,4 @@
-# BERT 情緒分類（imood_emotion/ + scripts/ + checks/ + eval/）的依賴。
+# BERT 情緒分類（emotion/ + baseline/ + eval/）的依賴。
 #
 # ⚠️ 不要在這裡指定 torch / torchvision。
 #    base image (pytorch/pytorch:2.13.0-cuda12.6-cudnn9-runtime) 已內建一組

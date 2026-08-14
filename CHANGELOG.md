@@ -1,5 +1,36 @@
 # 更新紀錄
 
+## 2026-08-14 — 重構資料夾架構
+
+只搬檔案與改 import，推論邏輯完全未動。進版控的頂層資料夾 8 個減成 6 個。
+
+### 改名
+
+- `imood_emotion/` → `emotion/`
+- `imood_emotion/source.py` → `baseline/fake_stt.py`
+
+### 搬移
+
+- `emotion/` 剩四支：`labels.py` / `preprocess.py` / `classifier.py` / `downstream.py`
+- `recorder.py` 移出 production 套件 → `baseline/recorder.py`
+- `scripts/` → `baseline/`（`prepare_samples.py`、`run_baseline.py`）
+- `checks/` → `baseline/checks/`
+- `results/` → `baseline/results/`
+- `research/` 移出版控，檔案留在本機
+
+### 程式碼
+
+- `now_iso()` 從 `recorder.py` 移到 `emotion/downstream.py`
+- `baseline/checks/` 三支的 `sys.path` 層數 +1
+- `emotion/preprocess.py` 的 `_PUNCT` 修正 escape sequence，字串值不變
+
+### 文件與設定
+
+- 新增 `baseline/README.md`
+- README 專案結構與所有指令路徑更新
+- `.gitignore`、`.dockerignore` 的 `results/` 規則改指 `baseline/results/`
+- `docker-compose.yml` 註解裡的範例指令路徑更新
+
 ## 2026-08-12 — 回滾麥克風輸入，重整專案結構
 
 不加功能，只做回滾與重新分類：把 repo 收斂回「模擬串流 → 前處理 → BERT 推論 →

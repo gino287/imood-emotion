@@ -32,7 +32,7 @@ x-common: &common
 services:
   # 主要服務：借用主機 GPU
   # 範例指令:#   docker compose -f docker/docker-compose.yml run --rm app \
-            #   python scripts/run_baseline.py --device cuda --limit 200
+            #   python baseline/run_baseline.py --device cuda --limit 200
   app:
     <<: *common
     deploy:
@@ -45,7 +45,7 @@ services:
 
   # CPU 對照組
   # 範例指令:#   docker compose -f docker/docker-compose.yml run --rm app-cpu \
-            #   python scripts/run_baseline.py --device cpu --limit 200
+            #   python baseline/run_baseline.py --device cpu --limit 200
   app-cpu:
     <<: *common
 

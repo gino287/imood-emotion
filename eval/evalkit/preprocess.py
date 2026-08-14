@@ -1,3 +1,4 @@
+# 待GINO改寫
 """前處理規則（規劃書 v2 §3.3）。
 
 ⚠️ 資料來源一律用 refs/BERT_SMP2020-EWECT/data/raw/，不是同層的 data/clean/。

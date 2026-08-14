@@ -1,3 +1,4 @@
+# 待GINO改寫
 """產出 report.md 與 dashboard.html（規劃書 v2 §4.4）。
 
 dashboard.html 是單一檔案、資料內嵌、無任何外部 CDN 依賴：

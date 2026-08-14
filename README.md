@@ -46,11 +46,14 @@ docker compose -f docker/docker-compose.yml run --rm app \
 `.env` 不是必要的。目前用到的模型與資料集在 Hugging Face 上都是公開的，
 沒有 `.env` 也能 build、也能跑。要填的話複製 `.env.example` 成 `.env`。
 
+> 下面第 2~4 步跑的是 `baseline/` 那條測試流程 —— 現階段把模型跑起來就是走這條，
+> 上游是模擬的、輸出會落地存檔。逐步說明見 [`baseline/README.md`](baseline/README.md)。
+
 ### 2. 準備樣本
 
 ```bash
 docker compose -f docker/docker-compose.yml run --rm app-cpu \
-    python scripts/prepare_samples.py --limit 200
+    python baseline/prepare_samples.py --limit 200
 ```
 
 從 `Johnson8187/Chinese_Multi-Emotion_Dialogue_Dataset`（與模型同作者發布）以固定 seed
@@ -65,15 +68,15 @@ docker compose -f docker/docker-compose.yml run --rm app-cpu \
 ```bash
 # 間隔到達：模擬上游 0.5~3 秒的不規律停頓（貼近實際使用）
 docker compose -f docker/docker-compose.yml run --rm app-cpu \
-    python scripts/run_baseline.py --device cpu  --limit 200
+    python baseline/run_baseline.py --device cpu  --limit 200
 docker compose -f docker/docker-compose.yml run --rm app \
-    python scripts/run_baseline.py --device cuda --limit 200
+    python baseline/run_baseline.py --device cuda --limit 200
 
 # 連續到達：不等待，量模型本身的能力上限
 docker compose -f docker/docker-compose.yml run --rm app-cpu \
-    python scripts/run_baseline.py --device cpu  --limit 200 --no-delay
+    python baseline/run_baseline.py --device cpu  --limit 200 --no-delay
 docker compose -f docker/docker-compose.yml run --rm app \
-    python scripts/run_baseline.py --device cuda --limit 200 --no-delay
+    python baseline/run_baseline.py --device cuda --limit 200 --no-delay
 ```
 
 每收到一句立刻送進模型，不累積等待多句 —— 即時性優先。
@@ -83,10 +86,10 @@ docker compose -f docker/docker-compose.yml run --rm app \
 
 ```bash
 docker compose -f docker/docker-compose.yml run --rm app-cpu \
-    python checks/summarize.py
+    python baseline/checks/summarize.py
 ```
 
-讀 `_local/out/` 底下所有執行結果，寫出 [`results/summary.md`](results/summary.md)。
+讀 `_local/out/` 底下所有執行結果，寫出 [`baseline/results/summary.md`](baseline/results/summary.md)。
 
 ### 常用參數
 
@@ -123,7 +126,7 @@ docker compose -f docker/docker-compose.yml run --rm app-cpu \
 
 執行環境（torch 版本、模型 id、樣本檔雜湊、時間戳）另存同名的 `.meta.json`。
 
-**逐句結果不進版控**（含資料集原文，且重跑即有）；不含原文的速度摘要放在 `results/`。
+**逐句結果不進版控**（含資料集原文，且重跑即有）；不含原文的速度摘要放在 `baseline/results/`。
 
 ### 下游封包
 
@@ -140,15 +143,25 @@ docker compose -f docker/docker-compose.yml run --rm app-cpu \
 
 ## 專案結構
 
+資料夾依「上線之後這裡的檔案還會不會被呼叫到」分成兩組：
+
 ```
-imood_emotion/    前處理、BERT 推論、輸出封包（本 repo 的主體）
-stt/              語音轉文字。前置模組、可替換，依賴與 image 都跟 BERT 分開
-scripts/          啟動與設定：run_baseline.py / prepare_samples.py
-checks/           驗證與分析：verify_labels.py / summarize.py / stress_fragments.py
-eval/             跨模型評測骨架（與 production 解耦，見 eval/README.md）
-results/          不含資料集原文的摘要，進版控
+emotion/          文字 → 情緒：前處理、BERT 推論、輸出封包        ← 上線會呼叫
+stt/              語音 → 文字：前置模組、可替換                  ← 上線會呼叫
+                  依賴與 image 都跟 BERT 分開
+
+baseline/         跑 200 句 baseline 的整條測試流程             ← 不上線
+eval/             跨模型評測骨架，決定要不要換模型／微調          ← 不上線
+
 docker/           dockerfile / dockerfile.stt / docker-compose.yml
 ```
+
+`baseline/` 與 `eval/` 兩條線各自獨立、各有自己的 README 與產出，
+刪掉任一條都不影響 `emotion/` 與 `stt/`。用法分別見
+[`baseline/README.md`](baseline/README.md) 與 [`eval/README.md`](eval/README.md)。
+
+`emotion/` 底下目前只有零件（前處理、分類器、輸出封包），把它們串起來的順序寫在
+`baseline/run_baseline.py` 裡 —— 那支是測試驅動程式，真正上線時的 driver 會另外補。
 
 專案資料夾以 `-v ..:/app` 掛進容器，改 `.py` 不用重 build；只有動到 `requirements.txt`
 才需要重跑 `docker compose -f docker/docker-compose.yml build`。
@@ -175,7 +188,7 @@ docker/           dockerfile / dockerfile.stt / docker-compose.yml
 
 ### 版本釘選
 
-模型與資料集都以 commit 釘住 `revision`（見 `imood_emotion/labels.py`）。
+模型與資料集都以 commit 釘住 `revision`（見 `emotion/labels.py`）。
 Hugging Face 的 repo 是可變的，作者隨時可能更新內容且不會通知；不釘版本的話，
 同一份程式在不同時間會拿到不同的權重或資料，先前量到的數字就失去比較基礎。
 
@@ -189,7 +202,7 @@ Hugging Face 的 repo 是可變的，作者隨時可能更新內容且不會通�
 
 ```bash
 docker compose -f docker/docker-compose.yml run --rm app-cpu \
-    python checks/verify_labels.py
+    python baseline/checks/verify_labels.py
 ```
 
 拿資料集的標註句跑一輪並印出混淆矩陣。順序正確時對角線會明顯浮出，
@@ -208,12 +221,12 @@ docker compose -f docker/docker-compose.yml run --rm app-cpu \
 「恐懼語調」，兩者在實際 `data.csv` 中皆為 0 筆；實際存在的是「關切語調」與「驚奇語調」，
 與模型 8 類完全對應。
 
-一律以實際資料為準，不為文件錯誤加設轉換層，並在 `scripts/prepare_samples.py`
+一律以實際資料為準，不為文件錯誤加設轉換層，並在 `baseline/prepare_samples.py`
 每次執行時斷言 —— 資料集是活的，作者哪天更新了內容，這裡會立刻叫出來。
 
 ## 前處理
 
-`imood_emotion/preprocess.py`。送進分類器之前擋掉兩類問題：
+`emotion/preprocess.py`。送進分類器之前擋掉兩類問題：
 
 **文字層過濾**：空白、純標點、少於 4 字、已知的語音辨識幻覺，一律不產生情緒事件。
 實測「只有標點」會被判為憤怒語調（信心 0.617）、單一字元會被判為疑問語調（信心 0.884）
@@ -258,11 +271,11 @@ CPU 沒有降頻問題，連續運算反而讓核心無法維持高頻。**同�
 >
 > **怎麼維持 GPU 熱啟動、把延遲壓回 17ms 這個量級，是目前的首要研究項目之一。**
 
-完整數字與解釋見 [`results/summary.md`](results/summary.md)。
+完整數字與解釋見 [`baseline/results/summary.md`](baseline/results/summary.md)。
 
 ### 與資料集標註的一致率
 
-`results/summary.md` 另外記了一個一致率 168/197（85%）。
+`baseline/results/summary.md` 另外記了一個一致率 168/197（85%）。
 
 > ⚠️ **這不是準確率。** 樣本僅 197 句、且刻意做成各類均衡（與真實輸入分布不同）。
 > 這個數字只能證明「pipeline 接通、標籤沒接錯」，不足以代表模型效能，也不該對外引用。
@@ -275,10 +288,10 @@ CPU 沒有降頻問題，連續運算反而讓核心無法維持高頻。**同�
 
 ```bash
 docker compose -f docker/docker-compose.yml run --rm app-cpu \
-    python checks/stress_fragments.py
+    python baseline/checks/stress_fragments.py
 ```
 
-200 句實測（[`results/fragment_robustness.md`](results/fragment_robustness.md)）：
+200 句實測（[`baseline/results/fragment_robustness.md`](baseline/results/fragment_robustness.md)）：
 
 | | 完整句 | 截斷片段 |
 | --- | ---: | ---: |
@@ -317,7 +330,7 @@ docker compose -f docker/docker-compose.yml run --rm stt \
 - 有自己的 `stt/requirements.txt` 與 `docker/dockerfile.stt`，
   BERT 那個 image **不含 faster-whisper** —— 只想要情緒分類的人不該被迫連帶抓
   一整套語音辨識依賴。
-- 不 import `imood_emotion` 的任何東西，只回傳原始轉錄文字；簡繁轉換與文字過濾
+- 不 import `emotion` 的任何東西，只回傳原始轉錄文字；簡繁轉換與文字過濾
   是下一站（前處理）的事。日後要把它拆成獨立 repo，整個資料夾搬走即可。
 
 刻意不使用 `initial_prompt`：原本放了一句提示詞想把 Whisper 拉向繁體，實測發現

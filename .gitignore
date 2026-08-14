@@ -1,4 +1,4 @@
-# 本地筆記：整包不進 git。公私邊界的定義見 CLAUDE.md。
+# 本地筆記
 CLAUDE.md
 notes/
 
@@ -13,8 +13,8 @@ _local/
 eval/data/
 eval/results/
 
-# 逐句推論結果含資料集原文；results/ 只收不含原文的摘要
-results/*.jsonl
+# 逐句推論結果含資料集原文；baseline/results/ 只收不含原文的摘要
+baseline/results/*.jsonl
 
 # 金鑰（HF_TOKEN 走 env_file 帶進容器，不進版控）
 .env
@@ -35,3 +35,6 @@ checkpoints/
 runs/
 *.bin
 *.safetensors
+
+
+research/
