@@ -1,3 +1,4 @@
+# 2026-08-18 更新，待GINO重新審閱
 # imood-emotion 的執行環境。
 #   建置指令:
 #   docker compose -f docker/docker-compose.yml build
@@ -48,6 +49,29 @@ services:
             #   python baseline/run_baseline.py --device cpu --limit 200
   app-cpu:
     <<: *common
+
+  #JoyGen素材篩選（離線流程，依賴含f2/yt-dlp/whisper）
+  # 範例指令:  #   docker compose -f docker/docker-compose.yml run --rm sourcing \
+              #   python sourcing/collect/fetch_bilibili.py --limit 3
+  # 抖音要 cookie，放 .env 的 DOUYIN_COOKIE，由 env_file 帶進來
+  sourcing:
+    build:
+      context: ..
+      dockerfile: docker/dockerfile.sourcing
+    image: imood-emotion-sourcing
+    volumes:
+      - ..:/app
+    env_file:
+      - path: ../.env
+        required: false
+    working_dir: /app
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
 
   #前置模組STT語音轉文字
   # 範例指令:  #   docker compose -f docker/docker-compose.yml run --rm stt \

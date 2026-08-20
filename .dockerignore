@@ -1,8 +1,9 @@
+# 2026-08-18 更新，待GINO重新審閱
 # ⚠️ 這個檔案必須留在專案根目錄，不能跟著 dockerfile 一起搬進 docker/。
 #    Docker 找的是「build context 根目錄」底下的 .dockerignore，而 context 是專案根目錄。
 #    搬走它不會報錯，只會靜默失效，然後 image 突然大一整個 .cache/。
 #
-# 兩個 image（docker/dockerfile 與 docker/dockerfile.stt）共用這份規則。
+# 三個 image（docker/dockerfile、dockerfile.stt、dockerfile.sourcing）共用這份規則。
 # dockerfile 是 COPY . .，沒有這份檔案的話下面這些東西會被打包進去。
 # 開發時一律用 -v 掛載專案資料夾，被排除的內容容器仍然看得到，不影響執行。
 

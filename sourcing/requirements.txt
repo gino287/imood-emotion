@@ -1,0 +1,19 @@
+# 待GINO改寫
+# sourcing/ 的額外依賴，跟主 requirements.txt 分開。
+#
+# 理由同主檔開頭對 faster-whisper 的處理：素材篩選是一次性的離線工作，
+# 上線流程不會碰到。只想跑 BERT 情緒分類的人不該被迫連帶裝一整套下載器。
+#
+# 安裝：pip install -r sourcing/requirements.txt
+
+f2                # 抖音 metadata。⚠️ 目前只支援抖音/TikTok/Twitter/微博，
+                  #   B站要等 0.0.1.8 才會加入，所以 B站那份是直接打官方 API
+
+yt-dlp            # L4 抽音訊用（也可抓 B站 metadata，但官方 API 更直接）
+
+Pillow            # L3 封面縮圖牆拼圖
+
+# L4B 臉部表情辨識。文字語意判不出表情（實測：平靜講解榮格心理學的影片
+# 因為內容悲傷而拿到全場最高的情緒起伏），所以改成直接量臉。
+hsemotion-onnx    # EfficientNet + AffectNet 8 類，ONNX 推論、不吃 GPU 也夠快
+opencv-python-headless   # 讀影格與人臉偵測。headless 版不裝 GUI 依賴，容器裡用不到

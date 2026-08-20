@@ -1,5 +1,59 @@
 # 更新紀錄
 
+## 2026-08-20 — 新增 sourcing 素材篩選模組（實驗中）與五類情緒映射
+
+> `sourcing/` 標註為**實驗中**：流程還在調整，尚未整理成可直接使用的模組。
+
+### 新增
+
+- `sourcing/` 模組，依用途分成六個子資料夾：
+  - `common/`：`paths.py` 集中所有輸入輸出位置、`store.py` 存檔與續跑
+  - `mapping/`：`schemes.py` 四套標籤體系的映射表與交付用的
+    `DELIVERY_LABELS`／`RAVDESS_TO_DELIVERY`／`DETECT_TO_DELIVERY`、
+    `show_mapping.py` 印映射關係、
+    `crosstab.py` 從 predictions.jsonl 重算交叉表與價性閘門、
+    `compare.py` 文字與臉部判定的對照
+  - `collect/`：`normalize_urls.py` 兩份網址清單 → `sources.jsonl`、
+    `fetch_bilibili.py` 打 `/x/web-interface/view` 與 `/x/tag/archive/tags`、
+    `fetch_douyin.py` 用 f2 的 `fetch_one_video`、
+    `fetch_channel.py` 用 WBI 簽名抓某作者的全部作品、
+    `group_authors.py` 以作者分組產候選人物排行、
+    `coarse_filter.py` 時長／分區／片型關鍵字粗篩、`covers.py` 封面下載與縮圖牆
+  - `detect/`：`text_timeline.py` 抽音訊 → STT → BERT → 情緒時間軸、
+    `face_timeline.py` 抽影格 → YuNet 人臉偵測 → hsemotion 表情辨識、
+    `scan_batch.py` 時間窗抽樣的大規模粗掃（`--probe` / `--full` /
+    `--rescore` / `--report`）
+  - `deliver/`：`shortlist.py` 候選排序、`make_review_page.py` 產出可點時間戳的檢視頁、
+    `cut_clips.py` 依 FER 結果切出片段檔與 manifest
+  - `actors/`：`prepare_ravdess.py` 整理 RAVDESS 成「同一人 × 五個情緒資料夾」、
+    `verify_ravdess.py` 用 FER 交叉驗證檔名標的情緒
+  - `README.md`（含每個檔案的逐一說明）、`ROUTES.md`（素材路線與資料集比較）、
+    `requirements.txt`、各層 `__init__.py`
+- `eval/scripts/build_spoken_set.py` 從逐字稿抽出待標註的口語測試集
+- `docker/dockerfile.sourcing` 與 compose 的 `sourcing` 服務
+
+### 程式碼
+
+- `emotion/labels.py` 新增 `FIVE_CLASS_LABELS`、`TEXT_LAYER_LABELS`、
+  `NATIVE_TO_FIVE`，並斷言鍵與 `NATIVE_LABELS` 一致
+- `eval/configs/models.yaml` 的 `johnson-small` 新增 `joygen5` 映射組；
+  啟用 `johnson-large` 候選（四組映射與 small 版相同）
+- `stt/transcribe.py` 新增 `Segment` dataclass，`Transcript` 新增 `segments` 欄位；
+  `transcribe()` 保留每段的 start/end；CLI 新增 `--segments`
+- `sourcing/detect/text_timeline.py` 的 `--remap`：用已存的 `raw_label`
+  重算映射與切點，不重跑 STT 與 BERT
+- `sourcing/detect/face_timeline.py` 的 `download_window()` 加
+  `--force-keyframes-at-cuts`，抓完用新增的 `media_duration()` 驗實際長度，
+  落在 `WINDOW_MIN_RATIO`~`WINDOW_MAX_RATIO` 之外重抓 `WINDOW_TRIES` 次
+- `sourcing/detect/scan_batch.py` 新增 `playable_seconds()`（分 P 影片改用 P1 長度）、
+  記錄 `window_seconds_actual`、新增 `--uid`
+
+### 設定與文件
+
+- `.env.example` 新增 `DOUYIN_COOKIE`、`BILI_SESSDATA`
+- `.dockerignore` 註解由「兩個 image」改為三個
+- `.gitignore` 新增 `tmp/`、`logs/`
+
 ## 2026-08-14 — 重構資料夾架構
 
 只搬檔案與改 import，推論邏輯完全未動。進版控的頂層資料夾 8 個減成 6 個。

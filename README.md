@@ -1,3 +1,5 @@
+> 2026-08-18 更新，待GINO重新審閱
+
 # imood-emotion — BERT 情緒分類模組
 
 imood.ai 情緒陪伴 AI 的情緒分類環節。逐句吃進文字，即時吐出情緒類別與信心分數。
@@ -152,13 +154,24 @@ stt/              語音 → 文字：前置模組、可替換                  
 
 baseline/         跑 200 句 baseline 的整條測試流程             ← 不上線
 eval/             跨模型評測骨架，決定要不要換模型／微調          ← 不上線
+sourcing/         JoyGen 情緒影片素材：映射與取材，一次性離線流程   ← 不上線
+                  ⚠️ 實驗中，還沒整理成可直接使用的模組
+                  common/ 路徑與存檔　mapping/ 標籤映射與檢查
+                  collect/ 抓清單與 metadata　detect/ 判情緒（文字／臉部）
+                  deliver/ 切出交付片段　actors/ 演員資料集
+                  依賴與 image 都跟 BERT 分開
 
-docker/           dockerfile / dockerfile.stt / docker-compose.yml
+docker/           dockerfile / dockerfile.stt / dockerfile.sourcing
+                  / docker-compose.yml
 ```
 
-`baseline/` 與 `eval/` 兩條線各自獨立、各有自己的 README 與產出，
+`baseline/`、`eval/`、`sourcing/` 三條線各自獨立、各有自己的 README 與產出，
 刪掉任一條都不影響 `emotion/` 與 `stt/`。用法分別見
-[`baseline/README.md`](baseline/README.md) 與 [`eval/README.md`](eval/README.md)。
+[`baseline/README.md`](baseline/README.md)、[`eval/README.md`](eval/README.md)
+與 [`sourcing/README.md`](sourcing/README.md)。
+
+其中 **`sourcing/` 標註為實驗中**：它是這一版才開的新方向，流程與判準都還在調整，
+介面隨時會變。程式碼進版控是為了讓過程看得到，不代表它已經整理完可以直接拿來用。
 
 `emotion/` 底下目前只有零件（前處理、分類器、輸出封包），把它們串起來的順序寫在
 `baseline/run_baseline.py` 裡 —— 那支是測試驅動程式，真正上線時的 driver 會另外補。

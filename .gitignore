@@ -2,8 +2,14 @@
 CLAUDE.md
 notes/
 
+# JoyGen 素材清單與交辦內容：來源是別人的 repo，不隨本專案散布
+tmp/
+
 # 執行期產物：抽樣樣本、逐句推論結果、下游封包
 _local/
+
+# f2（sourcing/ 抓抖音用）會在專案根目錄自己開 logs/ 寫執行紀錄
+logs/
 
 # 跨模型評測框架：程式碼（configs/evalkit/scripts）正常進版控，讓協作者看得到評測邏輯；
 # 但底下這兩個目錄不進：

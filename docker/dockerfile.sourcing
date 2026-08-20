@@ -1,0 +1,30 @@
+# 待GINO改寫
+# imood-emotion — JoyGen 素材篩選（離線流程）的執行環境
+FROM pytorch/pytorch:2.13.0-cuda12.6-cudnn9-runtime
+#  沿用同一個 base，L4 要跑 BERT 與 Whisper
+
+WORKDIR /app
+#設定目錄
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONIOENCODING=utf-8 \
+    HF_HOME=/app/.cache/huggingface
+#設定環境變數:即時輸出、可以print中文、快取路徑
+
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+#yt-dlp 抽音訊要 ffmpeg
+
+#三份依賴都要：L1 用 f2、L4 串 STT(faster-whisper) 與 BERT(transformers)。
+#分三行 COPY 是因為多來源複製到同一個目錄會壓平檔名，三個 requirements.txt 會互蓋。
+COPY requirements.txt        /deps/base.txt
+COPY sourcing/requirements.txt /deps/sourcing.txt
+COPY stt/requirements.txt    /deps/stt.txt
+RUN pip install --no-cache-dir --break-system-packages \
+        -r /deps/base.txt -r /deps/sourcing.txt -r /deps/stt.txt
+
+COPY . .
+#打包剩餘檔案
+
+CMD ["python", "-c", "import f2, yt_dlp, faster_whisper, transformers; print('sourcing deps ok')"]
+#預設為環境檢查

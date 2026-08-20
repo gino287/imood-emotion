@@ -120,6 +120,36 @@ models:
         驚奇語調: surprise
         厭惡語調: angry
 
+      joygen5:        # JoyGen 素材篩選用的五類收斂：中性 / 喜 / 怒 / 哀 / 樂
+        #
+        # 五類是另一個標籤空間，但這裡的值仍寫成六類代號，因為指標是拿
+        # SMP2020 的真實標籤來算的 —— 換掉值域就沒有東西可以對照了。
+        # 對應關係：中性=neutral、樂=happy、怒=angry、哀=sad、驚=surprise。
+        #
+        # ⚠️ 「喜」在這一組裡不會出現。喜/樂 照字義應該分成「遇事而喜」與
+        #    「處之而樂」，但實測驚奇語調 90 筆裡 surprise 66.7%、happy 只有
+        #    6.7%、sad 0.0% —— 它抓到的是價性中立的驚訝，不是驚喜。
+        #    拿 raw_probs 做價性閘門也失敗（正負兩組的 happy 比例幾乎一樣，
+        #    高門檻時甚至反相關）。所以文字層只收斂到「驚」，
+        #    喜/哀 的分家交給下游的臉部表情或上下文。詳見 emotion/labels.py。
+        #
+        # 與 to_angry 的唯一差別是關切語調改為棄權：實測 fear 29.9% /
+        # happy 19.7% / sad 16.2% 全糊在一起，硬塞給 neutral 是在灌水。
+        平淡語氣: neutral       # 中性
+        關切語調: null          # 棄權
+        開心語調: happy         # 樂
+        憤怒語調: angry         # 怒
+        悲傷語調: sad           # 哀
+        # 疑問語調原本也映到 surprise（在這份微博資料上它 40.5% 是 surprise、
+        # 0% 是 happy）。2026-08-18 拿 7 支真實影片跑完後改成棄權：
+        # 口語長篇敘事裡它佔全部段落的 13%、貢獻了「驚」的 68%，
+        # 抓到的其實是講話的語氣習慣不是驚訝。
+        # ⚠️ 這個改動會讓下面的 SMP2020 指標變差（那份是書面文字，情況不同），
+        #    但 joygen5 的用途是口語影片素材篩選，以實際情境為準。
+        疑問語調: null
+        驚奇語調: surprise      # 驚（待下游裁決成 喜/哀）
+        厭惡語調: angry         # 怒
+
     # 哪一組是報告主表用的預設值。等 mapping-free 指標出來後再回頭改這裡。
     default_mapping: draft
 
@@ -127,11 +157,58 @@ models:
   # 以下為已知後續會加入的候選，等第一個模型跑通後再逐一啟用。
   # 取消註解 + 補上 native_labels/covers/mappings 即可，不需改程式。
   # -------------------------------------------------------------------------
-  # - key: johnson-large
-  #   hf_id: Johnson8187/Chinese-Emotion
-  #   adapter: hf_seqcls
-  #   note: 同系列 large 版（XLM-RoBERTa large, ~355M）。原生八類與 Small 版相同，
-  #         映射表可直接沿用；重點在比較速度與 VRAM 的代價
+  - key: johnson-large
+    hf_id: Johnson8187/Chinese-Emotion
+    adapter: hf_seqcls
+    note: 同系列 large 版（XLM-RoBERTa large, ~355M）。原生八類與 Small 版相同，
+          映射表可直接沿用；重點在比較速度與 VRAM 的代價
+
+    # 與 Small 版相同的八類，順序同樣抄自 model card（config 一樣是 LABEL_0..7 佔位符）
+    native_labels: [平淡語氣, 關切語調, 開心語調, 憤怒語調, 悲傷語調, 疑問語調, 驚奇語調, 厭惡語調]
+    native_labels_source: https://huggingface.co/Johnson8187/Chinese-Emotion （model card 的 label_mapping）
+    covers: [happy, angry, sad, surprise, neutral]
+
+    # 映射表與 Small 版完全相同 —— 原生類別一樣，沒有理由用不同的對應。
+    # 兩個模型套同一組映射，數字才是在比模型而不是在比映射。
+    mappings:
+      draft:
+        平淡語氣: neutral
+        關切語調: neutral
+        開心語調: happy
+        憤怒語調: angry
+        悲傷語調: sad
+        疑問語調: surprise
+        驚奇語調: surprise
+        厭惡語調: fear
+      abstain:
+        平淡語氣: neutral
+        關切語調: neutral
+        開心語調: happy
+        憤怒語調: angry
+        悲傷語調: sad
+        疑問語調: surprise
+        驚奇語調: surprise
+        厭惡語調: null
+      to_angry:
+        平淡語氣: neutral
+        關切語調: neutral
+        開心語調: happy
+        憤怒語調: angry
+        悲傷語調: sad
+        疑問語調: surprise
+        驚奇語調: surprise
+        厭惡語調: angry
+      joygen5:
+        平淡語氣: neutral
+        關切語調: null
+        開心語調: happy
+        憤怒語調: angry
+        悲傷語調: sad
+        疑問語調: null
+        驚奇語調: surprise
+        厭惡語調: angry
+    default_mapping: draft
+
   #
   # - key: structbert-iic
   #   hf_id: iic/nlp_structbert_emotion-classification_chinese-base
